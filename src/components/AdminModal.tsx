@@ -581,40 +581,18 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                 <label className="block text-xs font-semibold text-stone-300 mb-1.5">
                   Role v systému
                 </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setNewRole('staff')}
-                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                      newRole === 'staff'
-                        ? 'bg-amber-500/10 border-amber-500 text-amber-300'
-                        : 'bg-stone-950 border-stone-800 text-stone-400 hover:border-stone-700'
-                    }`}
-                  >
-                    <p className="font-bold text-xs text-stone-200">Personál / Obsluha</p>
-                    <p className="text-[11px] text-stone-400 mt-0.5">Pouze výuka, testy a trénink stolů</p>
-                  </button>
-                  <button
-                    type="button"
-                    disabled={!currentUser?.isSuperAdmin}
-                    onClick={() => currentUser?.isSuperAdmin && setNewRole('admin')}
-                    className={`p-3 rounded-xl border text-left transition-all ${
-                      !currentUser?.isSuperAdmin
-                        ? 'opacity-40 cursor-not-allowed bg-stone-950 border-stone-800/60'
-                        : newRole === 'admin'
-                        ? 'bg-amber-500/10 border-amber-500 text-amber-300 cursor-pointer'
-                        : 'bg-stone-950 border-stone-800 text-stone-400 hover:border-stone-700 cursor-pointer'
-                    }`}
-                  >
-                    <p className="font-bold text-xs text-stone-200">
-                      👑 Administrátor {!currentUser?.isSuperAdmin && '🔒'}
+                <div className="p-3.5 rounded-xl border bg-amber-500/10 border-amber-500/40 text-amber-300">
+                  <div className="flex items-center justify-between">
+                    <p className="font-bold text-xs text-stone-100 flex items-center gap-1.5">
+                      <span>👤 Personál / Obsluha</span>
                     </p>
-                    <p className="text-[11px] text-stone-400 mt-0.5">
-                      {currentUser?.isSuperAdmin
-                        ? 'Plný přístup k vytváření uživatelů a heslům'
-                        : 'Vyhrazeno pro Hlavního administrátora'}
-                    </p>
-                  </button>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      Standardní přístup
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-stone-400 mt-1">
+                    Přístup do výuky, testů, zkoušek a interaktivního plánu stolů. V systému je vyhrazen pouze jeden administrátor: <strong>Jan Rzounek (Hlavní administrátor)</strong>.
+                  </p>
                 </div>
               </div>
 

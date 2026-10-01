@@ -21,18 +21,7 @@ const DEFAULT_USERS: AppUser[] = [
     isSuperAdmin: true,
     isActive: true,
     notes: 'Hlavní administrátorský účet (Vlastník)',
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: 'user_admin_02',
-    username: 'rzounekjan',
-    name: 'Jan Rzounek',
-    password: 'admin',
-    role: 'admin',
-    isSuperAdmin: true,
-    isActive: true,
-    notes: 'Osobní účet hlavního administrátora',
-    createdAt: new Date().toISOString()
+    createdAt: '2026-01-01T00:00:00.000Z'
   },
   {
     id: 'user_staff_01',
@@ -43,7 +32,7 @@ const DEFAULT_USERS: AppUser[] = [
     isSuperAdmin: false,
     isActive: true,
     notes: 'Výchozí zkušební účet pro personál',
-    createdAt: new Date().toISOString()
+    createdAt: '2026-01-01T00:00:00.000Z'
   }
 ];
 
@@ -68,30 +57,56 @@ class AuthService {
       onSnapshot(colRef, (snapshot) => {
         if (!snapshot.empty) {
           const remoteUsers: AppUser[] = [];
+          const toDeleteFromRemote: string[] = [];
+
           snapshot.forEach((docSnap) => {
             const data = docSnap.data() as AppUser;
-            remoteUsers.push(data);
-          });
-
-          // Ensure super admin accounts always retain isSuperAdmin: true
-          remoteUsers.forEach(u => {
+            // Purge any extra admin account from Firestore (keep ONLY user_admin_01)
             if (
-              u.id === 'user_admin_01' || 
-              u.id === 'user_admin_02' || 
-              u.username === 'admin' || 
-              u.username === 'rzounekjan'
+              data.id === 'user_admin_02' || 
+              data.username === 'rzounekjan' || 
+              (data.role === 'admin' && data.id !== 'user_admin_01')
             ) {
-              u.isSuperAdmin = true;
+              toDeleteFromRemote.push(docSnap.id);
+            } else {
+              remoteUsers.push(data);
             }
           });
+
+          // Delete extraneous admin accounts from Firestore
+          toDeleteFromRemote.forEach((docId) => {
+            deleteDoc(doc(db, 'restaurant_accounts', docId)).catch(() => {});
+          });
+
+          // Ensure main admin account is correctly formatted
+          const mainAdminIdx = remoteUsers.findIndex(u => u.id === 'user_admin_01' || u.username === 'admin');
+          if (mainAdminIdx >= 0) {
+            remoteUsers[mainAdminIdx] = {
+              ...remoteUsers[mainAdminIdx],
+              id: 'user_admin_01',
+              username: 'admin',
+              name: 'Jan Rzounek (Hlavní administrátor)',
+              role: 'admin',
+              isSuperAdmin: true,
+              isActive: true
+            };
+          } else {
+            remoteUsers.unshift(DEFAULT_USERS[0]);
+            setDoc(doc(db, 'restaurant_accounts', DEFAULT_USERS[0].id), DEFAULT_USERS[0]).catch(() => {});
+          }
 
           this.users = remoteUsers;
           this.saveUsersLocally();
 
           if (this.currentUser) {
-            const updated = this.users.find(u => u.id === this.currentUser?.id);
-            if (updated) {
-              this.currentUser = updated;
+            // If previously logged in as user_admin_02, switch to user_admin_01
+            if (this.currentUser.id === 'user_admin_02' || (this.currentUser.role === 'admin' && this.currentUser.id !== 'user_admin_01')) {
+              this.currentUser = this.users.find(u => u.id === 'user_admin_01') || null;
+            } else {
+              const updated = this.users.find(u => u.id === this.currentUser?.id);
+              if (updated) {
+                this.currentUser = updated;
+              }
             }
           }
           this.notify();
@@ -121,28 +136,37 @@ class AuthService {
     try {
       const stored = localStorage.getItem(ACCOUNTS_STORAGE_KEY);
       if (stored) {
-        this.users = JSON.parse(stored);
-        // Ensure main admin accounts always have isSuperAdmin: true
-        let hasSuperAdmin = false;
-        this.users.forEach(u => {
-          if (
-            u.id === 'user_admin_01' || 
-            u.id === 'user_admin_02' || 
-            u.username === 'admin' || 
-            u.username === 'rzounekjan'
-          ) {
-            u.isSuperAdmin = true;
-            hasSuperAdmin = true;
-          }
+        let loaded: AppUser[] = JSON.parse(stored);
+
+        // Delete all admin accounts except the single main admin Jan Rzounek (Hlavní administrátor)
+        loaded = loaded.filter(u => {
+          if (u.id === 'user_admin_02' || u.username === 'rzounekjan') return false;
+          if (u.role === 'admin' && u.id !== 'user_admin_01') return false;
+          return true;
         });
-        if (!hasSuperAdmin) {
-          this.users.unshift(DEFAULT_USERS[0]);
+
+        // Ensure user_admin_01 is present
+        const mainAdminIdx = loaded.findIndex(u => u.id === 'user_admin_01' || u.username === 'admin');
+        if (mainAdminIdx >= 0) {
+          loaded[mainAdminIdx] = {
+            ...loaded[mainAdminIdx],
+            id: 'user_admin_01',
+            username: 'admin',
+            name: 'Jan Rzounek (Hlavní administrátor)',
+            role: 'admin',
+            isSuperAdmin: true,
+            isActive: true,
+          };
+        } else {
+          loaded.unshift(DEFAULT_USERS[0]);
         }
-        // Ensure at least one admin exists
-        const hasAdmin = this.users.some(u => u.role === 'admin' && u.isActive);
-        if (!hasAdmin) {
-          this.users.push(DEFAULT_USERS[0]);
+
+        // Ensure staff account exists
+        if (!loaded.some(u => u.role === 'staff')) {
+          loaded.push(DEFAULT_USERS[1]);
         }
+
+        this.users = loaded;
         this.saveUsersLocally();
       } else {
         this.users = [...DEFAULT_USERS];

@@ -8,20 +8,8 @@
     "isSuperAdmin": true,
     "isActive": true,
     "notes": "Hlavní administrátorský účet (Vlastník)",
-    "createdAt": "2026-10-01T18:48:17.678Z",
+    "createdAt": "2026-01-01T00:00:00.000Z",
     "lastLoginAt": "2026-10-01T19:02:02.915Z"
-  },
-  {
-    "id": "user_admin_02",
-    "username": "rzounekjan",
-    "name": "Jan Rzounek",
-    "password": "admin",
-    "role": "admin",
-    "isSuperAdmin": true,
-    "isActive": true,
-    "notes": "Osobní účet hlavního administrátora",
-    "createdAt": "2026-10-01T18:48:17.679Z",
-    "lastLoginAt": "2026-10-01T18:48:36.503Z"
   },
   {
     "id": "user_staff_01",
@@ -32,7 +20,7 @@
     "isSuperAdmin": false,
     "isActive": true,
     "notes": "Výchozí zkušební účet pro personál",
-    "createdAt": "2026-10-01T18:48:17.679Z",
+    "createdAt": "2026-01-01T00:00:00.000Z",
     "lastLoginAt": "2026-10-01T18:48:43.402Z"
   }
 ]
