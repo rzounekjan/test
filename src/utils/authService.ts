@@ -158,35 +158,6 @@ class AuthService {
     return { success: true, user: found };
   }
 
-  public loginDirectAdmin(displayName?: string): AppUser {
-    let admin = this.users.find(u => u.role === 'admin' && u.isActive);
-    if (!admin) {
-      admin = DEFAULT_USERS[0];
-      this.users.unshift(admin);
-      this.saveUsers();
-    }
-
-    if (displayName) {
-      admin.name = displayName;
-    }
-    admin.lastLoginAt = new Date().toISOString();
-    this.saveUsers();
-
-    this.currentUser = admin;
-    const session: AuthSession = {
-      user: admin,
-      loginTimestamp: Date.now()
-    };
-    try {
-      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
-    } catch {
-      // ignore
-    }
-
-    this.notify();
-    return admin;
-  }
-
   public logout(): void {
     this.currentUser = null;
     try {

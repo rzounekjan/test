@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, KeyRound, User, Eye, EyeOff, ShieldCheck, ArrowRight, Sparkles } from 'lucide-react';
+import { Lock, KeyRound, User, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { authService } from '../utils/authService';
 import { AppUser } from '../types/auth';
 
@@ -13,7 +13,6 @@ export const LoginGate: React.FC<LoginGateProps> = ({ onLoginSuccess }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [showAdminHelp, setShowAdminHelp] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,11 +31,6 @@ export const LoginGate: React.FC<LoginGateProps> = ({ onLoginSuccess }) => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleQuickAdminLogin = () => {
-    const admin = authService.loginDirectAdmin('Jan Rzounek (Administrátor)');
-    onLoginSuccess(admin);
   };
 
   return (
@@ -135,49 +129,13 @@ export const LoginGate: React.FC<LoginGateProps> = ({ onLoginSuccess }) => {
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
-
-          {/* Quick Admin Access */}
-          <div className="mt-6 pt-5 border-t border-stone-800/80">
-            <button
-              type="button"
-              onClick={handleQuickAdminLogin}
-              className="w-full py-2.5 px-3 rounded-xl bg-stone-800/70 hover:bg-stone-800 border border-stone-700/60 text-amber-400 hover:text-amber-300 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <ShieldCheck className="w-4 h-4 text-amber-400" />
-              <span>Jsem administrátor (Rychlý vstup pro Jana Rzounka)</span>
-            </button>
-          </div>
         </div>
 
-        {/* Footer info & Admin credentials toggle */}
+        {/* Footer info */}
         <div className="mt-6 text-center">
           <p className="text-xs text-stone-500">
-            Nemáte vytvořený účet? Přístupové údaje vám přidělí manažer provozu.
+            Nemáte vytvořený účet? Přístupové jméno a heslo vám přidělí manažer provozu.
           </p>
-
-          <button
-            type="button"
-            onClick={() => setShowAdminHelp(!showAdminHelp)}
-            className="mt-3 text-[11px] text-stone-400 hover:text-amber-400 underline underline-offset-4 cursor-pointer transition-colors"
-          >
-            {showAdminHelp ? 'Skrýt přihlašovací údaje administrátora' : 'Zobrazit nápovědu pro administrátora'}
-          </button>
-
-          {showAdminHelp && (
-            <div className="mt-3 p-3.5 rounded-2xl bg-stone-900 border border-stone-800 text-left text-xs text-stone-300 animate-in fade-in duration-200">
-              <p className="font-bold text-amber-400 flex items-center gap-1.5 mb-1.5">
-                <Sparkles className="w-3.5 h-3.5" />
-                Výchozí administrátorský přístup:
-              </p>
-              <div className="space-y-1 font-mono text-[11px] text-stone-300 bg-stone-950 p-2.5 rounded-xl border border-stone-800">
-                <p>Login: <strong className="text-amber-300">admin</strong></p>
-                <p>Heslo: <strong className="text-amber-300">admin</strong></p>
-              </div>
-              <p className="text-[11px] text-stone-400 mt-2">
-                Po přihlášení jako administrátor můžete v horní liště spravovat účty, vytvářet přihlášení pro personál nebo změnit své heslo.
-              </p>
-            </div>
-          )}
         </div>
       </div>
     </div>
