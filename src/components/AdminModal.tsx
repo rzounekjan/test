@@ -2,22 +2,27 @@ import React, { useState, useEffect } from 'react';
 import { 
   X, UserPlus, Users, KeyRound, Copy, Check, Trash2, 
   ShieldAlert, ShieldCheck, Sparkles, RefreshCw, Lock, AlertCircle,
-  Trophy, RotateCcw
+  Trophy, RotateCcw, BarChart3
 } from 'lucide-react';
 import { authService } from '../utils/authService';
 import { AppUser } from '../types/auth';
 import { getUserStats, resetUserStats } from '../utils/storage';
+import { WaiterDetailsModal } from './WaiterDetailsModal';
 
 interface AdminModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentUser: AppUser | null;
+  totalQuestionsCount?: number;
+  totalItemsCount?: number;
 }
 
 export const AdminModal: React.FC<AdminModalProps> = ({
   isOpen,
   onClose,
-  currentUser
+  currentUser,
+  totalQuestionsCount = 911,
+  totalItemsCount = 241
 }) => {
   const [users, setUsers] = useState<AppUser[]>([]);
   const [activeTab, setActiveTab] = useState<'list' | 'create'>('list');
@@ -35,6 +40,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editPasswordValue, setEditPasswordValue] = useState('');
   const [statsRevision, setStatsRevision] = useState(0);
+  const [selectedDetailsUser, setSelectedDetailsUser] = useState<AppUser | null>(null);
 
   const refreshUsers = () => {
     setUsers(authService.getAllUsers());
@@ -228,7 +234,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                   ? Math.round((userStats.correctCount / userStats.totalAnswered) * 100)
                   : 0;
                 const masteredQuestions = userStats.masteredQuestionIds?.length || 0;
-                const percentDone = Math.min(100, Math.round((masteredQuestions / 1048) * 100));
+                const percentDone = Math.min(100, Math.round((masteredQuestions / totalQuestionsCount) * 100));
 
                 return (
                   <div
@@ -283,6 +289,17 @@ export const AdminModal: React.FC<AdminModalProps> = ({
 
                       {/* Action buttons */}
                       <div className="flex items-center gap-1.5 flex-wrap">
+                        {/* Details Button */}
+                        <button
+                          type="button"
+                          onClick={() => setSelectedDetailsUser(user)}
+                          className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 text-xs font-black flex items-center gap-1.5 shadow-md shadow-amber-950/40 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                          title={`Zobrazit detailní rozpis podsložek a otázek pro ${user.name}`}
+                        >
+                          <BarChart3 className="w-3.5 h-3.5" />
+                          <span>Detaily</span>
+                        </button>
+
                         {/* Copy credentials for WhatsApp/SMS */}
                         <button
                           type="button"
@@ -383,7 +400,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                           <span>Postup ve výuce:</span>
                         </div>
                         <div className="font-mono text-xs text-stone-300">
-                          <strong className="text-amber-400 font-bold">{masteredQuestions}</strong> z 1048 otázek ({userStats.masteredItemIds?.length || 0} položek plně)
+                          <strong className="text-amber-400 font-bold">{masteredQuestions}</strong> z {totalQuestionsCount} otázek ({userStats.masteredItemIds?.length || 0} z {totalItemsCount} položek plně)
                           <span className="ml-1.5 px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-sans font-bold text-[10px]">
                             {percentDone}%
                           </span>
@@ -412,16 +429,29 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                           </span>
                         </div>
 
-                        {/* Reset ONLY this user's stats */}
-                        <button
-                          type="button"
-                          onClick={() => handleResetUserStats(user)}
-                          className="px-2.5 py-1 rounded-xl bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 hover:text-white border border-rose-900/60 hover:border-rose-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-                          title={`Vynulovat výsledky testů pouze pro uživatele ${user.name}`}
-                        >
-                          <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
-                          <span>Resetovat výsledky {user.role === 'admin' ? 'účtu' : 'číšníka'}</span>
-                        </button>
+                        {/* Action buttons in progress bar: Details & Reset */}
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedDetailsUser(user)}
+                            className="px-2.5 py-1 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                            title={`Zobrazit detailní rozpis podsložek pro ${user.name}`}
+                          >
+                            <BarChart3 className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Zobrazit podsložky</span>
+                          </button>
+
+                          {/* Reset ONLY this user's stats */}
+                          <button
+                            type="button"
+                            onClick={() => handleResetUserStats(user)}
+                            className="px-2.5 py-1 rounded-xl bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 hover:text-white border border-rose-900/60 hover:border-rose-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                            title={`Vynulovat výsledky testů pouze pro uživatele ${user.name}`}
+                          >
+                            <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
+                            <span>Reset</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -562,6 +592,14 @@ export const AdminModal: React.FC<AdminModalProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Waiter Detailed Breakdown Modal */}
+      <WaiterDetailsModal
+        isOpen={Boolean(selectedDetailsUser)}
+        onClose={() => setSelectedDetailsUser(null)}
+        user={selectedDetailsUser}
+        onStatsReset={() => setStatsRevision(prev => prev + 1)}
+      />
     </div>
   );
 };

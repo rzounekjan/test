@@ -529,6 +529,8 @@ export default function App() {
         isOpen={isAdminModalOpen}
         onClose={() => setIsAdminModalOpen(false)}
         currentUser={currentUser}
+        totalQuestionsCount={activeTotalQuestionsCount}
+        totalItemsCount={activeTotalItemsCount}
       />
     </div>
   );

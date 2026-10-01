@@ -44,7 +44,7 @@ export const Header: React.FC<HeaderProps> = ({
     : 0;
 
   const masteredQuestionsCount = stats.masteredQuestionIds ? stats.masteredQuestionIds.length : 0;
-  const totalQuestions = totalQuestionsCount || 1048;
+  const totalQuestions = totalQuestionsCount || 911;
 
   return (
     <header className="border-b border-stone-800 bg-stone-900/90 backdrop-blur-md sticky top-0 z-40">
