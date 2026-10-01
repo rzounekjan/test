@@ -93,6 +93,23 @@ service cloud.firestore {
           && incoming().updatedAt == request.time;
         allow delete: if isValidId(userId) && isOwner(userId) && (language == 'cs' || language == 'en');
       }
+
+      match /test_stats/{language} {
+        allow get, list: if isValidId(userId) && isOwner(userId) && (language == 'cs' || language == 'en');
+        allow create: if isValidId(userId) && isOwner(userId)
+          && (language == 'cs' || language == 'en')
+          && isValidUserLanguageStats(incoming())
+          && incoming().userId == userId
+          && incoming().language == language
+          && incoming().updatedAt == request.time;
+        allow update: if isValidId(userId) && isOwner(userId)
+          && (language == 'cs' || language == 'en')
+          && isValidUserLanguageStats(incoming())
+          && incoming().userId == existing().userId
+          && incoming().language == existing().language
+          && incoming().updatedAt == request.time;
+        allow delete: if isValidId(userId) && isOwner(userId) && (language == 'cs' || language == 'en');
+      }
     }
   }
 }

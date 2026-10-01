@@ -39,16 +39,16 @@ MENU_CATEGORIES_EN.forEach(cat => {
 });
 
 export function getStatsKey(lang: AppLanguage = 'cs'): string {
-  return `fuze_gastro_stats_${lang}`;
+  return `test_fuze_gastro_stats_${lang}`;
 }
 
 export function getStoredStats(lang: AppLanguage = 'cs'): UserStats {
   try {
     const key = getStatsKey(lang);
     let raw = localStorage.getItem(key);
-    // Backward compatibility for existing Czech stats
+    // Backward compatibility for existing test Czech stats
     if (!raw && lang === 'cs') {
-      raw = localStorage.getItem('fuze_gastro_stats');
+      raw = localStorage.getItem('test_fuze_gastro_stats');
     }
     if (raw) {
       const parsed = JSON.parse(raw);
@@ -168,7 +168,7 @@ export function saveStats(stats: UserStats, lang: AppLanguage = 'cs'): void {
   try {
     localStorage.setItem(getStatsKey(lang), JSON.stringify(stats));
     if (lang === 'cs') {
-      localStorage.setItem('fuze_gastro_stats', JSON.stringify(stats));
+      localStorage.setItem('test_fuze_gastro_stats', JSON.stringify(stats));
     }
     if (onSaveStatsCallback) {
       onSaveStatsCallback(lang, stats);

@@ -114,6 +114,10 @@
     "/users/{userId}/stats/{language}": {
       "schema": "UserLanguageStats",
       "description": "Per-language ABC training statistics synchronized across mobile devices and PC"
+    },
+    "/users/{userId}/test_stats/{language}": {
+      "schema": "UserLanguageStats",
+      "description": "Isolated test statistics for testing environment"
     }
   }
 }

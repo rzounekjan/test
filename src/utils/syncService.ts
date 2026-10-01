@@ -175,8 +175,8 @@ class SyncService {
     this.cleanupSnapshots();
 
     (['cs', 'en'] as AppLanguage[]).forEach(lang => {
-      const path = `users/${userId}/stats/${lang}`;
-      const docRef = doc(db, 'users', userId, 'stats', lang);
+      const path = `users/${userId}/test_stats/${lang}`;
+      const docRef = doc(db, 'users', userId, 'test_stats', lang);
 
       const unsub = onSnapshot(docRef, (docSnap) => {
         if (!docSnap.exists()) {
@@ -235,8 +235,8 @@ class SyncService {
 
     this.debounceTimers[lang] = setTimeout(async () => {
       if (!this.currentUser) return;
-      const path = `users/${this.currentUser.uid}/stats/${lang}`;
-      const docRef = doc(db, 'users', this.currentUser.uid, 'stats', lang);
+      const path = `users/${this.currentUser.uid}/test_stats/${lang}`;
+      const docRef = doc(db, 'users', this.currentUser.uid, 'test_stats', lang);
 
       this.status = 'syncing';
       this.notifyState();
