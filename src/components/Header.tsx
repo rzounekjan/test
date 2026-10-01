@@ -1,8 +1,9 @@
 import React from 'react';
-import { Volume2, VolumeX, BookOpen, Trophy, Sparkles, Utensils, RotateCcw, MapPin, Library } from 'lucide-react';
+import { Volume2, VolumeX, BookOpen, Trophy, Sparkles, Utensils, RotateCcw, MapPin, Library, ShieldCheck, LogOut } from 'lucide-react';
 import { UserStats } from '../utils/storage';
 import { soundManager } from '../utils/sound';
 import { PWAInstallButton } from './PWAInstallButton';
+import { AppUser } from '../types/auth';
 
 interface HeaderProps {
   currentTab: 'train' | 'exam' | 'catalog' | 'tables' | 'library';
@@ -13,6 +14,9 @@ interface HeaderProps {
   onResetStats: () => void;
   language?: 'cs' | 'en';
   onLanguageChange?: (lang: 'cs' | 'en') => void;
+  currentUser?: AppUser | null;
+  onOpenAdmin?: () => void;
+  onLogout?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -23,7 +27,10 @@ export const Header: React.FC<HeaderProps> = ({
   totalQuestionsCount,
   onResetStats,
   language = 'cs',
-  onLanguageChange
+  onLanguageChange,
+  currentUser,
+  onOpenAdmin,
+  onLogout
 }) => {
   const [soundOn, setSoundOn] = React.useState<boolean>(soundManager.isEnabled());
 
@@ -94,8 +101,29 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             </div>
 
-            {/* Mobile Actions: PWA Install & Sound button */}
+            {/* Mobile Actions: Admin, User, PWA Install & Sound button */}
             <div className="lg:hidden flex items-center gap-1.5 shrink-0">
+              {currentUser?.role === 'admin' && (
+                <button
+                  type="button"
+                  onClick={onOpenAdmin}
+                  className="px-2 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-bold flex items-center gap-1"
+                  title="Správa uživatelů"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Admin</span>
+                </button>
+              )}
+              {currentUser && (
+                <button
+                  type="button"
+                  onClick={onLogout}
+                  className="p-1.5 rounded-lg bg-stone-800 text-stone-400 hover:text-rose-400 transition-colors"
+                  title={`Odhlásit (${currentUser.name})`}
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              )}
               <PWAInstallButton language={language} />
               <button
                 onClick={handleToggleSound}
@@ -221,6 +249,36 @@ export const Header: React.FC<HeaderProps> = ({
               <RotateCcw className="w-3.5 h-3.5" />
               <span>{language === 'en' ? 'Reset score' : 'Resetovat skóre'}</span>
             </button>
+
+            {/* Admin Management Button */}
+            {currentUser?.role === 'admin' && (
+              <button
+                type="button"
+                onClick={onOpenAdmin}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500/20 to-amber-600/20 hover:from-amber-500/30 hover:to-amber-600/30 border border-amber-500/40 text-amber-300 text-xs font-bold transition-all shadow-sm cursor-pointer"
+                title="Správa uživatelů a hesel personálu"
+              >
+                <ShieldCheck className="w-4 h-4 text-amber-400" />
+                <span>Správa uživatelů</span>
+              </button>
+            )}
+
+            {/* Current user badge & Logout */}
+            {currentUser && (
+              <div className="flex items-center gap-1.5 pl-2 border-l border-stone-800">
+                <span className="text-xs font-medium text-stone-300 truncate max-w-[130px]" title={currentUser.name}>
+                  {currentUser.role === 'admin' ? '👑' : '👤'} {currentUser.name}
+                </span>
+                <button
+                  type="button"
+                  onClick={onLogout}
+                  className="p-1.5 rounded-lg bg-stone-800/80 hover:bg-rose-950/60 text-stone-400 hover:text-rose-300 border border-stone-700/60 hover:border-rose-900 transition-colors cursor-pointer"
+                  title="Odhlásit se z výukového programu"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

@@ -11,6 +11,10 @@ import { MenuExplorer } from './components/MenuExplorer';
 import { TableOrientationTrainer } from './components/TableOrientationTrainer';
 import { LibraryView } from './components/LibraryView';
 import { OfflineIndicator } from './components/OfflineIndicator';
+import { LoginGate } from './components/LoginGate';
+import { AdminModal } from './components/AdminModal';
+import { authService } from './utils/authService';
+import { AppUser } from './types/auth';
 import { RotateCcw } from 'lucide-react';
 
 const NAV_STATE_KEY = 'fuze_nav_state';
@@ -96,6 +100,14 @@ export default function App() {
 
   const [stats, setStats] = useState<UserStats>(() => getStoredStats(language));
   const [showResetModal, setShowResetModal] = useState<boolean>(false);
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(() => authService.getCurrentUser());
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+
+  useEffect(() => {
+    return authService.subscribe((user) => {
+      setCurrentUser(user);
+    });
+  }, []);
 
   // Dynamic total items and questions count based on active language
   // Automatically recalculates whenever items or questions are added/removed in either language
@@ -335,6 +347,10 @@ export default function App() {
     }
   };
 
+  if (!currentUser) {
+    return <LoginGate onLoginSuccess={(user) => setCurrentUser(user)} />;
+  }
+
   return (
     <div className="min-h-screen bg-stone-950 text-stone-100 flex flex-col font-sans">
       {/* Top App Header */}
@@ -352,6 +368,9 @@ export default function App() {
         onResetStats={() => setShowResetModal(true)}
         language={language}
         onLanguageChange={handleLanguageChange}
+        currentUser={currentUser}
+        onOpenAdmin={() => setIsAdminModalOpen(true)}
+        onLogout={() => authService.logout()}
       />
 
       {/* Main Content Area */}
@@ -486,6 +505,13 @@ export default function App() {
 
       {/* PWA Offline Connectivity Indicator */}
       <OfflineIndicator language={language} />
+
+      {/* Admin User Management Modal */}
+      <AdminModal
+        isOpen={isAdminModalOpen}
+        onClose={() => setIsAdminModalOpen(false)}
+        currentUser={currentUser}
+      />
     </div>
   );
 }
