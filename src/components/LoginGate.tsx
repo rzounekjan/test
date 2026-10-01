@@ -14,6 +14,12 @@ export const LoginGate: React.FC<LoginGateProps> = ({ onLoginSuccess }) => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const handleQuickFill = (u: string, p: string) => {
+    setUsername(u);
+    setPassword(p);
+    setError(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -34,14 +40,14 @@ export const LoginGate: React.FC<LoginGateProps> = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen bg-stone-950 flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden select-none">
+    <div className="min-h-screen bg-stone-950 flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden">
       {/* Background ambient decorative glows */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-amber-600/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-10 right-10 w-72 h-72 bg-amber-800/10 rounded-full blur-2xl pointer-events-none" />
 
       <div className="w-full max-w-md relative z-10">
         {/* Brand Card Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6 sm:mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-700 shadow-2xl shadow-amber-950/60 border border-amber-400/40 text-stone-950 font-black tracking-wider text-2xl mb-4">
             FZ
           </div>
@@ -59,13 +65,20 @@ export const LoginGate: React.FC<LoginGateProps> = ({ onLoginSuccess }) => {
         </div>
 
         {/* Login Form Box */}
-        <div className="bg-stone-900/90 border border-stone-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl">
+        <div className="bg-stone-900/90 border border-stone-800/80 rounded-3xl p-5 sm:p-8 shadow-2xl backdrop-blur-xl">
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Error Message */}
             {error && (
-              <div className="p-3.5 rounded-2xl bg-red-950/60 border border-red-800/80 text-red-200 text-sm flex items-start gap-2.5 animate-in fade-in duration-200">
-                <span className="text-red-400 font-bold shrink-0">⚠️</span>
-                <span>{error}</span>
+              <div className="p-3.5 rounded-2xl bg-red-950/60 border border-red-800/80 text-red-200 text-xs sm:text-sm flex flex-col gap-1 animate-in fade-in duration-200">
+                <div className="flex items-start gap-2">
+                  <span className="text-red-400 font-bold shrink-0">⚠️</span>
+                  <span>{error}</span>
+                </div>
+                {error.includes('neexistuje') && (
+                  <p className="text-[11px] text-stone-400 mt-1 pl-5">
+                    💡 Pokud jste účet vytvořili na počítači, otevřete na mobilu přímý odkaz z administrace, nebo klikněte na zkušební přihlášení níže.
+                  </p>
+                )}
               </div>
             )}
 
@@ -85,8 +98,10 @@ export const LoginGate: React.FC<LoginGateProps> = ({ onLoginSuccess }) => {
                   placeholder="např. tereza nebo admin"
                   autoCapitalize="none"
                   autoCorrect="off"
+                  spellCheck={false}
+                  autoComplete="username"
                   required
-                  className="w-full pl-10 pr-4 py-3 bg-stone-950/90 border border-stone-800 rounded-2xl text-stone-100 placeholder-stone-600 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm transition-all"
+                  className="w-full pl-10 pr-4 py-3.5 bg-stone-950/90 border border-stone-800 rounded-2xl text-stone-100 placeholder-stone-600 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-base sm:text-sm transition-all select-text"
                 />
               </div>
             </div>
@@ -104,14 +119,18 @@ export const LoginGate: React.FC<LoginGateProps> = ({ onLoginSuccess }) => {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Vaše přidělené heslo"
+                  placeholder="Vaše heslo"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  autoComplete="current-password"
                   required
-                  className="w-full pl-10 pr-11 py-3 bg-stone-950/90 border border-stone-800 rounded-2xl text-stone-100 placeholder-stone-600 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm transition-all"
+                  className="w-full pl-10 pr-11 py-3.5 bg-stone-950/90 border border-stone-800 rounded-2xl text-stone-100 placeholder-stone-600 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-base sm:text-sm transition-all select-text font-mono"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-stone-500 hover:text-stone-300 transition-colors"
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-stone-500 hover:text-stone-300 transition-colors p-2 cursor-pointer"
                   tabIndex={-1}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -129,6 +148,31 @@ export const LoginGate: React.FC<LoginGateProps> = ({ onLoginSuccess }) => {
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
+
+          {/* Quick-fill helper for mobile testing */}
+          <div className="mt-5 pt-4 border-t border-stone-800/80">
+            <p className="text-[11px] font-semibold text-stone-400 mb-2 text-center">
+              Rychlé přihlášení (1 ťuknutí na mobilu):
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => handleQuickFill('admin', 'admin')}
+                className="p-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-bold text-center transition-all cursor-pointer"
+              >
+                👑 Jan Rzounek
+                <span className="block text-[10px] text-stone-400 font-mono font-normal">admin / admin</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickFill('obsluha', 'fuze')}
+                className="p-2 rounded-xl bg-stone-800/80 hover:bg-stone-800 border border-stone-700 text-stone-200 text-xs font-bold text-center transition-all cursor-pointer"
+              >
+                🍽️ Obsluha
+                <span className="block text-[10px] text-stone-400 font-mono font-normal">obsluha / fuze</span>
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Footer info */}

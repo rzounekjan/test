@@ -168,10 +168,11 @@ export const AdminModal: React.FC<AdminModalProps> = ({
       showStatus('Údaje hlavního administrátora nelze kopírovat.', 'error');
       return;
     }
-    const text = `Ahoj ${user.name},\nzde jsou tvé přístupové údaje do výukového programu FUZE Gastro Akademie:\n\n🌐 Web: ${window.location.origin}\n👤 Přihlašovací jméno: ${user.username}\n🔑 Heslo: ${user.password}\n\nPo přihlášení můžeš začít trénovat menu a ingredience!`;
+    const directLoginLink = `${window.location.origin}/#auth=${encodeURIComponent(user.username)}:${encodeURIComponent(user.password)}:${encodeURIComponent(user.name)}:${encodeURIComponent(user.role)}`;
+    const text = `Ahoj ${user.name},\nzde jsou tvé přístupové údaje do výukového programu FUZE Gastro Akademie:\n\n🌐 Web: ${window.location.origin}\n👤 Přihlašovací jméno: ${user.username}\n🔑 Heslo: ${user.password}\n\n👉 Odkaz pro rychlé přihlášení na mobilu (1 kliknutí):\n${directLoginLink}\n\nPo otevření na mobilu se ihned přihlásíš a můžeš začít trénovat menu!`;
     navigator.clipboard.writeText(text);
     setCopiedId(user.id);
-    showStatus(`Přístupové údaje pro ${user.name} byly zkopírovány do schránky!`, 'success');
+    showStatus(`Přístupové údaje a přímý odkaz pro ${user.name} byly zkopírovány!`, 'success');
     setTimeout(() => {
       setCopiedId(null);
     }, 2500);

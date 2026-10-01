@@ -47,6 +47,7 @@ class AuthService {
   constructor() {
     this.loadUsers();
     this.restoreSession();
+    this.checkUrlAuth();
   }
 
   private loadUsers(): void {
@@ -158,7 +159,11 @@ class AuthService {
       return { success: false, error: 'Tento účet byl zablokován administrátorem.' };
     }
 
-    if (found.password !== cleanPassword) {
+    // Check password: allow exact match or case-insensitive match (for mobile keyboards that auto-shift first letter)
+    const isPasswordMatch = found.password === cleanPassword || 
+      found.password.toLowerCase() === cleanPassword.toLowerCase();
+
+    if (!isPasswordMatch) {
       return { success: false, error: 'Nesprávné heslo. Zkontrolujte velká a malá písmena.' };
     }
 
@@ -334,6 +339,118 @@ class AuthService {
     const randPrefix = prefixes[Math.floor(Math.random() * prefixes.length)];
     const randNum = Math.floor(100 + Math.random() * 900);
     return `${randPrefix}${randNum}`;
+  }
+
+  public checkUrlAuth(): AppUser | null {
+    if (typeof window === 'undefined') return null;
+    try {
+      const hash = window.location.hash || '';
+      const search = window.location.search || '';
+
+      let authParam = '';
+      if (hash.startsWith('#auth=')) {
+        authParam = decodeURIComponent(hash.substring(6));
+      } else if (search.includes('auth=')) {
+        const params = new URLSearchParams(search);
+        authParam = params.get('auth') || '';
+      }
+
+      if (authParam) {
+        const parts = authParam.split(':');
+        if (parts.length >= 2) {
+          const [u, p, n, r] = parts;
+          const cleanU = (u || '').trim().toLowerCase();
+          const cleanP = (p || '').trim();
+          const cleanName = n ? decodeURIComponent(n).trim() : cleanU;
+          const cleanRole = (r === 'admin' ? 'admin' : 'staff') as 'admin' | 'staff';
+
+          let existing = this.users.find(user => user.username.toLowerCase() === cleanU);
+          if (!existing) {
+            existing = {
+              id: `user_imported_${Date.now()}`,
+              username: cleanU,
+              name: cleanName || cleanU,
+              password: cleanP,
+              role: cleanRole,
+              isSuperAdmin: cleanU === 'admin' || cleanU === 'rzounekjan',
+              isActive: true,
+              notes: 'Přeneseno z rychlého přihlašovacího odkazu',
+              createdAt: new Date().toISOString()
+            };
+            this.users.push(existing);
+            this.saveUsers();
+          } else {
+            // Update password if it was updated by admin
+            if (cleanP && existing.password !== cleanP) {
+              existing.password = cleanP;
+              this.saveUsers();
+            }
+          }
+
+          // Clean URL without reloading page
+          try {
+            window.history.replaceState(null, '', window.location.pathname);
+          } catch {}
+
+          // Log in user automatically
+          existing.lastLoginAt = new Date().toISOString();
+          this.currentUser = existing;
+          const session: AuthSession = { user: existing, loginTimestamp: Date.now() };
+          try { localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session)); } catch {}
+          this.notify();
+          return existing;
+        }
+      }
+    } catch (e) {
+      console.error('Error parsing URL auth', e);
+    }
+    return null;
+  }
+
+  public exportUsersJson(): string {
+    return JSON.stringify(this.users, null, 2);
+  }
+
+  public importUsersJson(jsonStr: string): { success: boolean; count?: number; error?: string } {
+    try {
+      const parsed = JSON.parse(jsonStr);
+      if (!Array.isArray(parsed)) {
+        return { success: false, error: 'Neplatný formát souboru (musí být seznam uživatelů).' };
+      }
+
+      let count = 0;
+      parsed.forEach((item: Partial<AppUser>) => {
+        if (item.username && item.password && item.name) {
+          const cleanU = item.username.trim().toLowerCase();
+          const cleanP = item.password.trim();
+          const existing = this.users.find(u => u.username.toLowerCase() === cleanU);
+          if (existing) {
+            existing.password = cleanP;
+            existing.name = item.name.trim();
+            existing.role = item.role === 'admin' ? 'admin' : 'staff';
+          } else {
+            this.users.push({
+              id: item.id || `user_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+              username: cleanU,
+              name: item.name.trim(),
+              password: cleanP,
+              role: item.role === 'admin' ? 'admin' : 'staff',
+              isSuperAdmin: cleanU === 'admin' || cleanU === 'rzounekjan',
+              isActive: item.isActive !== false,
+              notes: item.notes || 'Importováno',
+              createdAt: item.createdAt || new Date().toISOString()
+            });
+            count++;
+          }
+        }
+      });
+
+      this.saveUsers();
+      this.notify();
+      return { success: true, count };
+    } catch {
+      return { success: false, error: 'Chyba při čtení dat.' };
+    }
   }
 }
 

@@ -118,13 +118,23 @@ export default function App() {
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
   useEffect(() => {
-    return authService.subscribe((user) => {
+    // Check if URL has one-tap login hash
+    authService.checkUrlAuth();
+    const handleHash = () => authService.checkUrlAuth();
+    window.addEventListener('hashchange', handleHash);
+
+    const unsub = authService.subscribe((user) => {
       setCurrentUser(user);
       if (user) {
         setActiveStatsUserId(user.id);
         setStats(getStoredStats(language, user.id));
       }
     });
+
+    return () => {
+      window.removeEventListener('hashchange', handleHash);
+      unsub();
+    };
   }, [language]);
 
   // Dynamic total items and questions count based on active language
