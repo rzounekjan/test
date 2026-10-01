@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { 
   X, UserPlus, Users, KeyRound, Copy, Check, Trash2, 
-  ShieldAlert, ShieldCheck, Sparkles, RefreshCw, Lock, AlertCircle 
+  ShieldAlert, ShieldCheck, Sparkles, RefreshCw, Lock, AlertCircle,
+  Trophy, RotateCcw
 } from 'lucide-react';
 import { authService } from '../utils/authService';
 import { AppUser } from '../types/auth';
+import { getUserStats, resetUserStats } from '../utils/storage';
 
 interface AdminModalProps {
   isOpen: boolean;
@@ -32,9 +34,24 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   // Editing password modal state
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editPasswordValue, setEditPasswordValue] = useState('');
+  const [statsRevision, setStatsRevision] = useState(0);
 
   const refreshUsers = () => {
     setUsers(authService.getAllUsers());
+  };
+
+  const handleResetUserStats = (user: AppUser) => {
+    const isSelf = currentUser?.id === user.id;
+    const confirmMsg = isSelf
+      ? `Opravdu chcete vyresetovat své vlastní studijní výsledky na 0?`
+      : `Opravdu chcete vyresetovat výsledky testů pouze pro uživatele "${user.name}"?\n\nJeho skóre bude nastaveno na 0. Vaše administrátorské výsledky ani výsledky ostatních uživatelů tím NEBUDOU ovlivněny.`;
+
+    if (window.confirm(confirmMsg)) {
+      resetUserStats(user.id, 'cs');
+      resetUserStats(user.id, 'en');
+      setStatsRevision(prev => prev + 1);
+      showStatus(`Výsledky testů pro uživatele ${user.name} byly vynulovány na 0.`, 'success');
+    }
   };
 
   useEffect(() => {
@@ -206,10 +223,16 @@ export const AdminModal: React.FC<AdminModalProps> = ({
               {users.map((user) => {
                 const isCurrent = currentUser?.id === user.id;
                 const isEditingPassword = editingUserId === user.id;
+                const userStats = getUserStats(user.id, 'cs');
+                const userAccuracy = userStats.totalAnswered > 0
+                  ? Math.round((userStats.correctCount / userStats.totalAnswered) * 100)
+                  : 0;
+                const masteredQuestions = userStats.masteredQuestionIds?.length || 0;
+                const percentDone = Math.min(100, Math.round((masteredQuestions / 1048) * 100));
 
                 return (
                   <div
-                    key={user.id}
+                    key={`${user.id}_${statsRevision}`}
                     className={`p-4 rounded-2xl border transition-all ${
                       user.isActive
                         ? 'bg-stone-950/70 border-stone-800/80 hover:border-stone-700'
@@ -351,6 +374,56 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                         </button>
                       </div>
                     )}
+
+                    {/* User Learning Progress & Stats Section */}
+                    <div className="mt-3.5 pt-3 border-t border-stone-800/80 bg-stone-900/60 -mx-4 -mb-4 p-3.5 rounded-b-2xl">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs mb-2">
+                        <div className="flex items-center gap-1.5 font-bold text-stone-200">
+                          <Trophy className="w-4 h-4 text-amber-400" />
+                          <span>Postup ve výuce:</span>
+                        </div>
+                        <div className="font-mono text-xs text-stone-300">
+                          <strong className="text-amber-400 font-bold">{masteredQuestions}</strong> z 1048 otázek ({userStats.masteredItemIds?.length || 0} položek plně)
+                          <span className="ml-1.5 px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-sans font-bold text-[10px]">
+                            {percentDone}%
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Visual progress bar */}
+                      <div className="w-full bg-stone-950 rounded-full h-2 mb-2.5 overflow-hidden border border-stone-800">
+                        <div 
+                          className="bg-gradient-to-r from-amber-500 to-amber-400 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${percentDone}%` }}
+                        />
+                      </div>
+
+                      {/* Detailed statistics pills & Reset Waiter button */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <div className="flex flex-wrap items-center gap-2 text-[11px] text-stone-400">
+                          <span className="px-2 py-0.5 rounded-md bg-stone-950 border border-stone-800">
+                            Úspěšnost: <strong className={userStats.totalAnswered > 0 ? (userAccuracy >= 80 ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold') : 'text-stone-300'}>{userStats.totalAnswered > 0 ? `${userAccuracy}%` : '0%'}</strong>
+                          </span>
+                          <span className="px-2 py-0.5 rounded-md bg-stone-950 border border-stone-800">
+                            Série: <strong className="text-amber-400 font-bold">🔥 {userStats.currentStreak}</strong> <span className="text-stone-500">(max {userStats.bestStreak})</span>
+                          </span>
+                          <span className="px-2 py-0.5 rounded-md bg-stone-950 border border-stone-800">
+                            Zodpovězeno: <strong className="text-stone-200">{userStats.totalAnswered}</strong>
+                          </span>
+                        </div>
+
+                        {/* Reset ONLY this user's stats */}
+                        <button
+                          type="button"
+                          onClick={() => handleResetUserStats(user)}
+                          className="px-2.5 py-1 rounded-xl bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 hover:text-white border border-rose-900/60 hover:border-rose-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                          title={`Vynulovat výsledky testů pouze pro uživatele ${user.name}`}
+                        >
+                          <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
+                          <span>Resetovat výsledky {user.role === 'admin' ? 'účtu' : 'číšníka'}</span>
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 );
               })}

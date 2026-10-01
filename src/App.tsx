@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { MENU_CATEGORIES, MenuCategory, MenuItem } from './data/menuData';
 import { MENU_CATEGORIES_EN } from './data/menuDataEn';
-import { getStoredStats, resetStats, UserStats } from './utils/storage';
+import { getStoredStats, resetStats, setActiveStatsUserId, UserStats } from './utils/storage';
 import { Header } from './components/Header';
 import { CategorySelector } from './components/CategorySelector';
 import { ItemSelector } from './components/ItemSelector';
@@ -98,16 +98,34 @@ export default function App() {
     return typeof nav.categoryItemIndex === 'number' ? nav.categoryItemIndex : 0;
   });
 
-  const [stats, setStats] = useState<UserStats>(() => getStoredStats(language));
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(() => {
+    const u = authService.getCurrentUser();
+    if (u) {
+      setActiveStatsUserId(u.id);
+    }
+    return u;
+  });
+
+  const [stats, setStats] = useState<UserStats>(() => {
+    const u = authService.getCurrentUser();
+    if (u) {
+      setActiveStatsUserId(u.id);
+    }
+    return getStoredStats(language, u?.id);
+  });
+
   const [showResetModal, setShowResetModal] = useState<boolean>(false);
-  const [currentUser, setCurrentUser] = useState<AppUser | null>(() => authService.getCurrentUser());
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
   useEffect(() => {
     return authService.subscribe((user) => {
       setCurrentUser(user);
+      if (user) {
+        setActiveStatsUserId(user.id);
+        setStats(getStoredStats(language, user.id));
+      }
     });
-  }, []);
+  }, [language]);
 
   // Dynamic total items and questions count based on active language
   // Automatically recalculates whenever items or questions are added/removed in either language
@@ -240,11 +258,11 @@ export default function App() {
   };
 
   const refreshStats = () => {
-    setStats(getStoredStats(language));
+    setStats(getStoredStats(language, currentUser?.id));
   };
 
   const handleConfirmReset = () => {
-    const fresh = resetStats(language);
+    const fresh = resetStats(language, currentUser?.id);
     setStats(fresh);
     setShowResetModal(false);
   };

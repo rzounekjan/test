@@ -38,17 +38,29 @@ MENU_CATEGORIES_EN.forEach(cat => {
   });
 });
 
-export function getStatsKey(lang: AppLanguage = 'cs'): string {
-  return `test_fuze_gastro_stats_${lang}`;
+let activeStatsUserId: string = 'admin';
+
+export function setActiveStatsUserId(userId: string): void {
+  if (userId) {
+    activeStatsUserId = userId;
+  }
 }
 
-export function getStoredStats(lang: AppLanguage = 'cs'): UserStats {
+export function getActiveStatsUserId(): string {
+  return activeStatsUserId;
+}
+
+export function getStatsKey(lang: AppLanguage = 'cs', userId: string = activeStatsUserId): string {
+  return `fuze_user_stats_${userId}_${lang}`;
+}
+
+export function getStoredStats(lang: AppLanguage = 'cs', userId: string = activeStatsUserId): UserStats {
   try {
-    const key = getStatsKey(lang);
+    const key = getStatsKey(lang, userId);
     let raw = localStorage.getItem(key);
-    // Backward compatibility for existing test Czech stats
-    if (!raw && lang === 'cs') {
-      raw = localStorage.getItem('test_fuze_gastro_stats');
+    // Backward compatibility for existing admin test stats
+    if (!raw && (userId === 'admin' || userId === 'user_admin_01' || userId === 'user_admin_02')) {
+      raw = localStorage.getItem(`test_fuze_gastro_stats_${lang}`) || (lang === 'cs' ? localStorage.getItem('test_fuze_gastro_stats') : null);
     }
     if (raw) {
       const parsed = JSON.parse(raw);
@@ -92,6 +104,10 @@ export function getStoredStats(lang: AppLanguage = 'cs'): UserStats {
     masteredQuestionIds: [],
     mistakeQuestionIds: []
   };
+}
+
+export function getUserStats(userId: string, lang: AppLanguage = 'cs'): UserStats {
+  return getStoredStats(lang, userId);
 }
 
 let onSaveStatsCallback: ((lang: AppLanguage, stats: UserStats) => void) | null = null;
@@ -164,12 +180,9 @@ export function mergeUserStats(local: UserStats, remote?: Partial<UserStats> | n
   };
 }
 
-export function saveStats(stats: UserStats, lang: AppLanguage = 'cs'): void {
+export function saveStats(stats: UserStats, lang: AppLanguage = 'cs', userId: string = activeStatsUserId): void {
   try {
-    localStorage.setItem(getStatsKey(lang), JSON.stringify(stats));
-    if (lang === 'cs') {
-      localStorage.setItem('test_fuze_gastro_stats', JSON.stringify(stats));
-    }
+    localStorage.setItem(getStatsKey(lang, userId), JSON.stringify(stats));
     if (onSaveStatsCallback) {
       onSaveStatsCallback(lang, stats);
     }
@@ -178,8 +191,8 @@ export function saveStats(stats: UserStats, lang: AppLanguage = 'cs'): void {
   }
 }
 
-export function recordAnswer(questionId: string, itemId: string, isCorrect: boolean, lang: AppLanguage = 'cs'): UserStats {
-  const stats = getStoredStats(lang);
+export function recordAnswer(questionId: string, itemId: string, isCorrect: boolean, lang: AppLanguage = 'cs', userId: string = activeStatsUserId): UserStats {
+  const stats = getStoredStats(lang, userId);
   stats.totalAnswered += 1;
 
   if (isCorrect) {
@@ -225,11 +238,11 @@ export function recordAnswer(questionId: string, itemId: string, isCorrect: bool
     }
   }
 
-  saveStats(stats, lang);
+  saveStats(stats, lang, userId);
   return stats;
 }
 
-export function resetStats(lang: AppLanguage = 'cs'): UserStats {
+export function resetStats(lang: AppLanguage = 'cs', userId: string = activeStatsUserId): UserStats {
   const fresh: UserStats = {
     totalAnswered: 0,
     correctCount: 0,
@@ -239,6 +252,10 @@ export function resetStats(lang: AppLanguage = 'cs'): UserStats {
     masteredQuestionIds: [],
     mistakeQuestionIds: []
   };
-  saveStats(fresh, lang);
+  saveStats(fresh, lang, userId);
   return fresh;
+}
+
+export function resetUserStats(userId: string, lang: AppLanguage = 'cs'): UserStats {
+  return resetStats(lang, userId);
 }
