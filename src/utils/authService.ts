@@ -47,7 +47,31 @@ class AuthService {
   constructor() {
     this.loadUsers();
     this.restoreSession();
-    this.checkUrlAuth();
+    this.fetchServerAccounts();
+  }
+
+  public async fetchServerAccounts(): Promise<void> {
+    if (typeof window === 'undefined') return;
+    try {
+      const res = await fetch('/api/accounts');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.users) && data.users.length > 0) {
+          this.users = data.users;
+          this.saveUsersLocally();
+          // Update current user reference if logged in
+          if (this.currentUser) {
+            const updated = this.users.find(u => u.id === this.currentUser?.id);
+            if (updated) {
+              this.currentUser = updated;
+            }
+          }
+          this.notify();
+        }
+      }
+    } catch {
+      // Offline fallback
+    }
   }
 
   private loadUsers(): void {
@@ -76,10 +100,10 @@ class AuthService {
         if (!hasAdmin) {
           this.users.push(DEFAULT_USERS[0]);
         }
-        this.saveUsers();
+        this.saveUsersLocally();
       } else {
         this.users = [...DEFAULT_USERS];
-        this.saveUsers();
+        this.saveUsersLocally();
       }
     } catch {
       this.users = [...DEFAULT_USERS];
@@ -87,10 +111,28 @@ class AuthService {
   }
 
   private saveUsers(): void {
+    this.saveUsersLocally();
+    this.syncUsersToServer();
+  }
+
+  private saveUsersLocally(): void {
     try {
       localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify(this.users));
     } catch (e) {
       console.error('Failed to save users database', e);
+    }
+  }
+
+  private async syncUsersToServer(): Promise<void> {
+    if (typeof window === 'undefined') return;
+    try {
+      await fetch('/api/accounts/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ users: this.users })
+      });
+    } catch {
+      // Network offline
     }
   }
 
@@ -147,9 +189,51 @@ class AuthService {
       return { success: false, error: 'Zadejte přihlašovací jméno i heslo.' };
     }
 
-    const found = this.users.find(
-      u => u.username.toLowerCase() === cleanUsername
-    );
+    // 1. Try server-side validation first so all devices share the exact same accounts
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: cleanUsername, password: cleanPassword })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.user) {
+          this.currentUser = data.user;
+          const idx = this.users.findIndex(u => u.id === data.user.id);
+          if (idx >= 0) {
+            this.users[idx] = data.user;
+          } else {
+            this.users.push(data.user);
+          }
+          this.saveUsersLocally();
+          const session: AuthSession = { user: data.user, loginTimestamp: Date.now() };
+          try { localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session)); } catch {}
+          this.notify();
+          return { success: true, user: data.user };
+        }
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        if (errData.error) {
+          return { success: false, error: errData.error };
+        }
+      }
+    } catch {
+      // Offline fallback: continue to local check
+    }
+
+    // 2. Offline / local fallback
+    const found = this.users.find(u => {
+      const uName = (u.username || '').toLowerCase();
+      const dName = (u.name || '').toLowerCase();
+      if (uName === cleanUsername) return true;
+      if (cleanUsername === 'rzounekjan@gmail.com' && (uName === 'admin' || uName === 'rzounekjan')) return true;
+      if (cleanUsername.includes('@') && cleanUsername.split('@')[0] === uName) return true;
+      if (dName === cleanUsername || dName.replace(/\s+/g, '') === cleanUsername.replace(/\s+/g, '')) return true;
+      if (cleanUsername === 'jan' && (uName === 'admin' || uName === 'rzounekjan')) return true;
+      return false;
+    });
 
     if (!found) {
       return { success: false, error: 'Uživatelské jméno neexistuje.' };
@@ -159,7 +243,7 @@ class AuthService {
       return { success: false, error: 'Tento účet byl zablokován administrátorem.' };
     }
 
-    // Check password: allow exact match or case-insensitive match (for mobile keyboards that auto-shift first letter)
+    // Exact match or case-insensitive match (for mobile auto-shift)
     const isPasswordMatch = found.password === cleanPassword || 
       found.password.toLowerCase() === cleanPassword.toLowerCase();
 
@@ -169,7 +253,7 @@ class AuthService {
 
     // Success
     found.lastLoginAt = new Date().toISOString();
-    this.saveUsers();
+    this.saveUsersLocally();
 
     this.currentUser = found;
     const session: AuthSession = {
@@ -339,72 +423,6 @@ class AuthService {
     const randPrefix = prefixes[Math.floor(Math.random() * prefixes.length)];
     const randNum = Math.floor(100 + Math.random() * 900);
     return `${randPrefix}${randNum}`;
-  }
-
-  public checkUrlAuth(): AppUser | null {
-    if (typeof window === 'undefined') return null;
-    try {
-      const hash = window.location.hash || '';
-      const search = window.location.search || '';
-
-      let authParam = '';
-      if (hash.startsWith('#auth=')) {
-        authParam = decodeURIComponent(hash.substring(6));
-      } else if (search.includes('auth=')) {
-        const params = new URLSearchParams(search);
-        authParam = params.get('auth') || '';
-      }
-
-      if (authParam) {
-        const parts = authParam.split(':');
-        if (parts.length >= 2) {
-          const [u, p, n, r] = parts;
-          const cleanU = (u || '').trim().toLowerCase();
-          const cleanP = (p || '').trim();
-          const cleanName = n ? decodeURIComponent(n).trim() : cleanU;
-          const cleanRole = (r === 'admin' ? 'admin' : 'staff') as 'admin' | 'staff';
-
-          let existing = this.users.find(user => user.username.toLowerCase() === cleanU);
-          if (!existing) {
-            existing = {
-              id: `user_imported_${Date.now()}`,
-              username: cleanU,
-              name: cleanName || cleanU,
-              password: cleanP,
-              role: cleanRole,
-              isSuperAdmin: cleanU === 'admin' || cleanU === 'rzounekjan',
-              isActive: true,
-              notes: 'Přeneseno z rychlého přihlašovacího odkazu',
-              createdAt: new Date().toISOString()
-            };
-            this.users.push(existing);
-            this.saveUsers();
-          } else {
-            // Update password if it was updated by admin
-            if (cleanP && existing.password !== cleanP) {
-              existing.password = cleanP;
-              this.saveUsers();
-            }
-          }
-
-          // Clean URL without reloading page
-          try {
-            window.history.replaceState(null, '', window.location.pathname);
-          } catch {}
-
-          // Log in user automatically
-          existing.lastLoginAt = new Date().toISOString();
-          this.currentUser = existing;
-          const session: AuthSession = { user: existing, loginTimestamp: Date.now() };
-          try { localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session)); } catch {}
-          this.notify();
-          return existing;
-        }
-      }
-    } catch (e) {
-      console.error('Error parsing URL auth', e);
-    }
-    return null;
   }
 
   public exportUsersJson(): string {

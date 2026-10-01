@@ -14,12 +14,6 @@ export const LoginGate: React.FC<LoginGateProps> = ({ onLoginSuccess }) => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleQuickFill = (u: string, p: string) => {
-    setUsername(u);
-    setPassword(p);
-    setError(null);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -148,31 +142,6 @@ export const LoginGate: React.FC<LoginGateProps> = ({ onLoginSuccess }) => {
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
-
-          {/* Quick-fill helper for mobile testing */}
-          <div className="mt-5 pt-4 border-t border-stone-800/80">
-            <p className="text-[11px] font-semibold text-stone-400 mb-2 text-center">
-              Rychlé přihlášení (1 ťuknutí na mobilu):
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickFill('admin', 'admin')}
-                className="p-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-bold text-center transition-all cursor-pointer"
-              >
-                👑 Jan Rzounek
-                <span className="block text-[10px] text-stone-400 font-mono font-normal">admin / admin</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickFill('obsluha', 'fuze')}
-                className="p-2 rounded-xl bg-stone-800/80 hover:bg-stone-800 border border-stone-700 text-stone-200 text-xs font-bold text-center transition-all cursor-pointer"
-              >
-                🍽️ Obsluha
-                <span className="block text-[10px] text-stone-400 font-mono font-normal">obsluha / fuze</span>
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* Footer info */}
