@@ -48,6 +48,10 @@ export const AdminModal: React.FC<AdminModalProps> = ({
 
   const handleResetUserStats = (user: AppUser) => {
     const isSelf = currentUser?.id === user.id;
+    if (user.isSuperAdmin && !isSelf) {
+      showStatus('Výsledky hlavního administrátora může spravovat pouze hlavní administrátor sám.', 'error');
+      return;
+    }
     const confirmMsg = isSelf
       ? `Opravdu chcete vyresetovat své vlastní studijní výsledky na 0?`
       : `Opravdu chcete vyresetovat výsledky testů pouze pro uživatele "${user.name}"?\n\nJeho skóre bude nastaveno na 0. Vaše administrátorské výsledky ani výsledky ostatních uživatelů tím NEBUDOU ovlivněny.`;
@@ -105,6 +109,10 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   };
 
   const handleToggleActive = (user: AppUser) => {
+    if (user.isSuperAdmin) {
+      showStatus('Účet hlavního administrátora nelze pozastavit.', 'error');
+      return;
+    }
     const res = authService.updateUser(user.id, { isActive: !user.isActive });
     if (res.success) {
       refreshUsers();
@@ -115,6 +123,14 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   };
 
   const handleDeleteUser = (user: AppUser) => {
+    if (user.isSuperAdmin) {
+      showStatus('Účet hlavního administrátora je chráněn a nelze jej smazat.', 'error');
+      return;
+    }
+    if (user.role === 'admin' && !currentUser?.isSuperAdmin) {
+      showStatus('Pouze hlavní administrátor má oprávnění mazat administrátorské účty.', 'error');
+      return;
+    }
     if (window.confirm(`Opravdu chcete smazat účet uživatele "${user.name}" (${user.username})?`)) {
       const res = authService.deleteUser(user.id);
       if (res.success) {
@@ -131,6 +147,11 @@ export const AdminModal: React.FC<AdminModalProps> = ({
       showStatus('Heslo nesmí být prázdné.', 'error');
       return;
     }
+    const target = users.find(u => u.id === userId);
+    if (target?.isSuperAdmin && currentUser?.id !== target.id) {
+      showStatus('Nemáte oprávnění měnit heslo hlavního administrátora.', 'error');
+      return;
+    }
     const res = authService.updateUser(userId, { password: editPasswordValue.trim() });
     if (res.success) {
       refreshUsers();
@@ -143,6 +164,10 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   };
 
   const copyCredentialsForStaff = (user: AppUser) => {
+    if (user.isSuperAdmin && currentUser?.id !== user.id) {
+      showStatus('Údaje hlavního administrátora nelze kopírovat.', 'error');
+      return;
+    }
     const text = `Ahoj ${user.name},\nzde jsou tvé přístupové údaje do výukového programu FUZE Gastro Akademie:\n\n🌐 Web: ${window.location.origin}\n👤 Přihlašovací jméno: ${user.username}\n🔑 Heslo: ${user.password}\n\nPo přihlášení můžeš začít trénovat menu a ingredience!`;
     navigator.clipboard.writeText(text);
     setCopiedId(user.id);
@@ -228,7 +253,17 @@ export const AdminModal: React.FC<AdminModalProps> = ({
             <div className="space-y-3">
               {users.map((user) => {
                 const isCurrent = currentUser?.id === user.id;
+                const isViewerSuperAdmin = Boolean(currentUser?.isSuperAdmin);
+                const isTargetSuperAdmin = Boolean(user.isSuperAdmin);
                 const isEditingPassword = editingUserId === user.id;
+
+                // Security permissions: Main admin credentials and controls are protected from other admins
+                const canSeePassword = !isTargetSuperAdmin || isCurrent;
+                const canEditPassword = !isTargetSuperAdmin || isCurrent;
+                const canToggleActive = !isCurrent && !isTargetSuperAdmin && (user.role !== 'admin' || isViewerSuperAdmin);
+                const canDelete = !isCurrent && !isTargetSuperAdmin && (user.role !== 'admin' || isViewerSuperAdmin);
+                const canResetStats = !isTargetSuperAdmin || isCurrent;
+
                 const userStats = getUserStats(user.id, 'cs');
                 const userAccuracy = userStats.totalAnswered > 0
                   ? Math.round((userStats.correctCount / userStats.totalAnswered) * 100)
@@ -248,13 +283,18 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       {/* User Info */}
                       <div className="space-y-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="font-bold text-stone-100 text-sm sm:text-base">
                             {user.name}
                           </h3>
-                          {user.role === 'admin' ? (
-                            <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                              👑 Administrátor
+                          {user.isSuperAdmin ? (
+                            <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-500/25 text-amber-300 border border-amber-500/40 flex items-center gap-1">
+                              <span>👑 Hlavní administrátor</span>
+                              <span className="text-[9px] px-1 py-0.2 bg-amber-950/80 text-amber-300 rounded font-semibold border border-amber-800/60">Vlastník</span>
+                            </span>
+                          ) : user.role === 'admin' ? (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-stone-800 text-amber-400 border border-stone-700">
+                              Administrátor
                             </span>
                           ) : (
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-stone-800 text-stone-300 border border-stone-700">
@@ -277,7 +317,15 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                         <div className="flex flex-wrap items-center gap-2 text-xs text-stone-400 font-mono">
                           <span>Login: <strong className="text-amber-300 font-bold">{user.username}</strong></span>
                           <span>•</span>
-                          <span>Heslo: <strong className="text-stone-200 bg-stone-900 px-2 py-0.5 rounded border border-stone-800">{user.password}</strong></span>
+                          {canSeePassword ? (
+                            <span>Heslo: <strong className="text-stone-200 bg-stone-900 px-2 py-0.5 rounded border border-stone-800">{user.password}</strong></span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 text-stone-400 bg-stone-950 px-2 py-0.5 rounded border border-stone-800">
+                              <Lock className="w-3 h-3 text-amber-400" />
+                              <span className="tracking-widest font-mono text-stone-300">••••••••</span>
+                              <span className="text-[10px] text-amber-400 font-sans font-semibold">(Chráněno)</span>
+                            </span>
+                          )}
                           {user.notes && (
                             <>
                               <span>•</span>
@@ -300,36 +348,40 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                           <span>Detaily</span>
                         </button>
 
-                        {/* Copy credentials for WhatsApp/SMS */}
-                        <button
-                          type="button"
-                          onClick={() => copyCredentialsForStaff(user)}
-                          title="Zkopírovat přístup pro zaslání obsluze"
-                          className="px-2.5 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 hover:text-amber-300 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-                        >
-                          {copiedId === user.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                          <span>{copiedId === user.id ? 'Zkopírováno' : 'Kopírovat přístup'}</span>
-                        </button>
+                        {/* Copy credentials for WhatsApp/SMS - Hidden for super admin when viewed by others */}
+                        {canSeePassword && (
+                          <button
+                            type="button"
+                            onClick={() => copyCredentialsForStaff(user)}
+                            title="Zkopírovat přístup pro zaslání obsluze"
+                            className="px-2.5 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 hover:text-amber-300 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                          >
+                            {copiedId === user.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            <span>{copiedId === user.id ? 'Zkopírováno' : 'Kopírovat přístup'}</span>
+                          </button>
+                        )}
 
-                        {/* Change Password Button */}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (isEditingPassword) {
-                              setEditingUserId(null);
-                            } else {
-                              setEditingUserId(user.id);
-                              setEditPasswordValue(user.password);
-                            }
-                          }}
-                          className="px-2.5 py-1.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-                        >
-                          <KeyRound className="w-3.5 h-3.5" />
-                          <span>Heslo</span>
-                        </button>
+                        {/* Change Password Button - Hidden for super admin when viewed by others */}
+                        {canEditPassword && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (isEditingPassword) {
+                                setEditingUserId(null);
+                              } else {
+                                setEditingUserId(user.id);
+                                setEditPasswordValue(user.password);
+                              }
+                            }}
+                            className="px-2.5 py-1.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                          >
+                            <KeyRound className="w-3.5 h-3.5" />
+                            <span>Heslo</span>
+                          </button>
+                        )}
 
-                        {/* Toggle active / suspend */}
-                        {!isCurrent && (
+                        {/* Toggle active / suspend - Super admin cannot be suspended */}
+                        {canToggleActive && (
                           <button
                             type="button"
                             onClick={() => handleToggleActive(user)}
@@ -343,8 +395,8 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                           </button>
                         )}
 
-                        {/* Delete User */}
-                        {!isCurrent && (
+                        {/* Delete User - Super admin cannot be deleted */}
+                        {canDelete && (
                           <button
                             type="button"
                             onClick={() => handleDeleteUser(user)}
@@ -442,15 +494,17 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                           </button>
 
                           {/* Reset ONLY this user's stats */}
-                          <button
-                            type="button"
-                            onClick={() => handleResetUserStats(user)}
-                            className="px-2.5 py-1 rounded-xl bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 hover:text-white border border-rose-900/60 hover:border-rose-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-                            title={`Vynulovat výsledky testů pouze pro uživatele ${user.name}`}
-                          >
-                            <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
-                            <span>Reset</span>
-                          </button>
+                          {canResetStats && (
+                            <button
+                              type="button"
+                              onClick={() => handleResetUserStats(user)}
+                              className="px-2.5 py-1 rounded-xl bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 hover:text-white border border-rose-900/60 hover:border-rose-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                              title={`Vynulovat výsledky testů pouze pro uživatele ${user.name}`}
+                            >
+                              <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
+                              <span>Reset</span>
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -542,15 +596,24 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setNewRole('admin')}
-                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                      newRole === 'admin'
-                        ? 'bg-amber-500/10 border-amber-500 text-amber-300'
-                        : 'bg-stone-950 border-stone-800 text-stone-400 hover:border-stone-700'
+                    disabled={!currentUser?.isSuperAdmin}
+                    onClick={() => currentUser?.isSuperAdmin && setNewRole('admin')}
+                    className={`p-3 rounded-xl border text-left transition-all ${
+                      !currentUser?.isSuperAdmin
+                        ? 'opacity-40 cursor-not-allowed bg-stone-950 border-stone-800/60'
+                        : newRole === 'admin'
+                        ? 'bg-amber-500/10 border-amber-500 text-amber-300 cursor-pointer'
+                        : 'bg-stone-950 border-stone-800 text-stone-400 hover:border-stone-700 cursor-pointer'
                     }`}
                   >
-                    <p className="font-bold text-xs text-stone-200">👑 Administrátor</p>
-                    <p className="text-[11px] text-stone-400 mt-0.5">Plný přístup k vytváření uživatelů a heslům</p>
+                    <p className="font-bold text-xs text-stone-200">
+                      👑 Administrátor {!currentUser?.isSuperAdmin && '🔒'}
+                    </p>
+                    <p className="text-[11px] text-stone-400 mt-0.5">
+                      {currentUser?.isSuperAdmin
+                        ? 'Plný přístup k vytváření uživatelů a heslům'
+                        : 'Vyhrazeno pro Hlavního administrátora'}
+                    </p>
                   </button>
                 </div>
               </div>

@@ -6,6 +6,7 @@ export interface AppUser {
   name: string; // Full display name, e.g. "Jan Rzounek", "Tereza - Plac"
   password: string; // Plain password for ease of staff management by admin
   role: UserRole;
+  isSuperAdmin?: boolean; // Hlavní administrátor (Vlastník - chráněný účet, který nikdo jiný nemůže vidět ani smazat)
   isActive: boolean;
   notes?: string;
   createdAt: string;

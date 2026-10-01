@@ -7,11 +7,12 @@ const DEFAULT_USERS: AppUser[] = [
   {
     id: 'user_admin_01',
     username: 'admin',
-    name: 'Jan Rzounek (Administrátor)',
+    name: 'Jan Rzounek (Hlavní administrátor)',
     password: 'admin',
     role: 'admin',
+    isSuperAdmin: true,
     isActive: true,
-    notes: 'Hlavní administrátorský účet',
+    notes: 'Hlavní administrátorský účet (Vlastník)',
     createdAt: new Date().toISOString()
   },
   {
@@ -20,8 +21,9 @@ const DEFAULT_USERS: AppUser[] = [
     name: 'Jan Rzounek',
     password: 'admin',
     role: 'admin',
+    isSuperAdmin: true,
     isActive: true,
-    notes: 'Osobní účet administrátora',
+    notes: 'Osobní účet hlavního administrátora',
     createdAt: new Date().toISOString()
   },
   {
@@ -30,6 +32,7 @@ const DEFAULT_USERS: AppUser[] = [
     name: 'Obsluha - Plac',
     password: 'fuze',
     role: 'staff',
+    isSuperAdmin: false,
     isActive: true,
     notes: 'Výchozí zkušební účet pro personál',
     createdAt: new Date().toISOString()
@@ -51,12 +54,28 @@ class AuthService {
       const stored = localStorage.getItem(ACCOUNTS_STORAGE_KEY);
       if (stored) {
         this.users = JSON.parse(stored);
+        // Ensure main admin accounts always have isSuperAdmin: true
+        let hasSuperAdmin = false;
+        this.users.forEach(u => {
+          if (
+            u.id === 'user_admin_01' || 
+            u.id === 'user_admin_02' || 
+            u.username === 'admin' || 
+            u.username === 'rzounekjan'
+          ) {
+            u.isSuperAdmin = true;
+            hasSuperAdmin = true;
+          }
+        });
+        if (!hasSuperAdmin) {
+          this.users.unshift(DEFAULT_USERS[0]);
+        }
         // Ensure at least one admin exists
         const hasAdmin = this.users.some(u => u.role === 'admin' && u.isActive);
         if (!hasAdmin) {
           this.users.push(DEFAULT_USERS[0]);
-          this.saveUsers();
         }
+        this.saveUsers();
       } else {
         this.users = [...DEFAULT_USERS];
         this.saveUsers();
@@ -110,6 +129,10 @@ class AuthService {
 
   public isAdmin(): boolean {
     return this.currentUser?.role === 'admin';
+  }
+
+  public isSuperAdmin(): boolean {
+    return Boolean(this.currentUser?.isSuperAdmin);
   }
 
   public async login(
@@ -195,6 +218,11 @@ class AuthService {
       return { success: false, error: 'Heslo musí mít alespoň 3 znaky.' };
     }
 
+    // Only Super Admin can create other admins
+    if (userData.role === 'admin' && !this.currentUser?.isSuperAdmin) {
+      return { success: false, error: 'Pouze hlavní administrátor (vlastník) může vytvářet administrátorské účty.' };
+    }
+
     const exists = this.users.some(u => u.username.toLowerCase() === cleanUsername);
     if (exists) {
       return { success: false, error: `Uživatelské jméno "${cleanUsername}" již existuje. Zvolte jiné.` };
@@ -206,6 +234,7 @@ class AuthService {
       name: cleanName,
       password: cleanPassword,
       role: userData.role,
+      isSuperAdmin: false,
       isActive: true,
       notes: userData.notes?.trim() || '',
       createdAt: new Date().toISOString()
@@ -226,6 +255,16 @@ class AuthService {
     }
 
     const targetUser = this.users[userIndex];
+
+    // Security: Protect Super Admin from being modified by other users
+    if (targetUser.isSuperAdmin && this.currentUser?.id !== targetUser.id) {
+      return { success: false, error: 'Účet hlavního administrátora je chráněn. Může jej upravovat pouze hlavní administrátor sám.' };
+    }
+
+    // Security: Regular admin cannot promote someone to admin
+    if (updates.role === 'admin' && !this.currentUser?.isSuperAdmin) {
+      return { success: false, error: 'Pouze hlavní administrátor může povyšovat uživatele na administrátory.' };
+    }
 
     // Prevent deactivating or demoting the last active admin
     if (
@@ -260,6 +299,16 @@ class AuthService {
     const targetUser = this.users.find(u => u.id === id);
     if (!targetUser) {
       return { success: false, error: 'Uživatel nenalezen.' };
+    }
+
+    // Security: Super Admin can NEVER be deleted
+    if (targetUser.isSuperAdmin) {
+      return { success: false, error: 'Účet hlavního administrátora je chráněn a nelze jej smazat.' };
+    }
+
+    // Security: Regular admin cannot delete other admin accounts
+    if (targetUser.role === 'admin' && !this.currentUser?.isSuperAdmin) {
+      return { success: false, error: 'Pouze hlavní administrátor má oprávnění mazat administrátorské účty.' };
     }
 
     if (targetUser.role === 'admin') {
