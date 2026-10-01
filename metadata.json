@@ -1,0 +1,6 @@
+{
+  "name": "FUZE Gastro Akademie",
+  "description": "Interaktivní výukový program pro zvládnutí položek menu a ingrediencí formou testů A, B, C.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

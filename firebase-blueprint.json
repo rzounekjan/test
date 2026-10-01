@@ -1,0 +1,119 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile information for device synchronization across PC and mobile",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique user ID from Firebase Auth",
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "description": "User email address",
+          "maxLength": 256
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Display name of the user",
+          "maxLength": 128
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "Profile picture URL",
+          "maxLength": 1024
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Account registration timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Profile last updated timestamp"
+        }
+      },
+      "required": ["id", "createdAt", "updatedAt"]
+    },
+    "UserLanguageStats": {
+      "title": "UserLanguageStats",
+      "description": "Progress and statistics for ABC gastro training in Czech or English",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth User ID",
+          "maxLength": 128
+        },
+        "language": {
+          "type": "string",
+          "description": "Language code: cs or en",
+          "enum": ["cs", "en"]
+        },
+        "totalAnswered": {
+          "type": "number",
+          "description": "Total number of answered quiz questions"
+        },
+        "correctCount": {
+          "type": "number",
+          "description": "Total number of correct answers"
+        },
+        "currentStreak": {
+          "type": "number",
+          "description": "Current consecutive streak of correct answers"
+        },
+        "bestStreak": {
+          "type": "number",
+          "description": "Best consecutive streak achieved"
+        },
+        "masteredItemIds": {
+          "type": "array",
+          "description": "IDs of menu items that have all questions answered correctly"
+        },
+        "masteredQuestionIds": {
+          "type": "array",
+          "description": "IDs of questions answered correctly"
+        },
+        "mistakeQuestionIds": {
+          "type": "array",
+          "description": "IDs of questions currently marked as mistakes"
+        },
+        "lastDevice": {
+          "type": "string",
+          "description": "Device category that last updated the record (mobile or pc)",
+          "maxLength": 64
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of the latest progress save"
+        }
+      },
+      "required": [
+        "userId",
+        "language",
+        "totalAnswered",
+        "correctCount",
+        "currentStreak",
+        "bestStreak",
+        "masteredItemIds",
+        "masteredQuestionIds",
+        "mistakeQuestionIds",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Collection of user profiles for authenticated sync"
+    },
+    "/users/{userId}/stats/{language}": {
+      "schema": "UserLanguageStats",
+      "description": "Per-language ABC training statistics synchronized across mobile devices and PC"
+    }
+  }
+}

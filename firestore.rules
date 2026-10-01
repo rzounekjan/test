@@ -1,0 +1,98 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default Deny Catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['id', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'email', 'displayName', 'photoURL', 'createdAt', 'updatedAt'])
+        && data.id is string && data.id.size() > 0 && data.id.size() <= 128
+        && (!('email' in data) || (data.email is string && data.email.size() <= 256))
+        && (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 128))
+        && (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 1024))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidUserLanguageStats(data) {
+      return data.keys().hasAll([
+        'userId', 'language', 'totalAnswered', 'correctCount', 
+        'currentStreak', 'bestStreak', 'masteredItemIds', 
+        'masteredQuestionIds', 'mistakeQuestionIds', 'updatedAt'
+      ])
+      && data.keys().hasOnly([
+        'userId', 'language', 'totalAnswered', 'correctCount', 
+        'currentStreak', 'bestStreak', 'masteredItemIds', 
+        'masteredQuestionIds', 'mistakeQuestionIds', 'lastDevice', 'updatedAt'
+      ])
+      && data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128
+      && (data.language == 'cs' || data.language == 'en')
+      && data.totalAnswered is number && data.totalAnswered >= 0 && data.totalAnswered <= 1000000
+      && data.correctCount is number && data.correctCount >= 0 && data.correctCount <= 1000000
+      && data.currentStreak is number && data.currentStreak >= 0 && data.currentStreak <= 1000000
+      && data.bestStreak is number && data.bestStreak >= 0 && data.bestStreak <= 1000000
+      && data.masteredItemIds is list && data.masteredItemIds.size() <= 500
+      && (data.masteredItemIds.size() == 0 || data.masteredItemIds[0] is string)
+      && data.masteredQuestionIds is list && data.masteredQuestionIds.size() <= 5000
+      && (data.masteredQuestionIds.size() == 0 || data.masteredQuestionIds[0] is string)
+      && data.mistakeQuestionIds is list && data.mistakeQuestionIds.size() <= 5000
+      && (data.mistakeQuestionIds.size() == 0 || data.mistakeQuestionIds[0] is string)
+      && (!('lastDevice' in data) || (data.lastDevice is string && data.lastDevice.size() <= 64))
+      && data.updatedAt is timestamp;
+    }
+
+    match /users/{userId} {
+      allow get, list: if isValidId(userId) && isOwner(userId);
+      allow create: if isValidId(userId) && isOwner(userId)
+        && isValidUserProfile(incoming())
+        && incoming().id == userId
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(userId) && isOwner(userId)
+        && isValidUserProfile(incoming())
+        && incoming().id == existing().id
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time;
+
+      match /stats/{language} {
+        allow get, list: if isValidId(userId) && isOwner(userId) && (language == 'cs' || language == 'en');
+        allow create: if isValidId(userId) && isOwner(userId)
+          && (language == 'cs' || language == 'en')
+          && isValidUserLanguageStats(incoming())
+          && incoming().userId == userId
+          && incoming().language == language
+          && incoming().updatedAt == request.time;
+        allow update: if isValidId(userId) && isOwner(userId)
+          && (language == 'cs' || language == 'en')
+          && isValidUserLanguageStats(incoming())
+          && incoming().userId == existing().userId
+          && incoming().language == existing().language
+          && incoming().updatedAt == request.time;
+        allow delete: if isValidId(userId) && isOwner(userId) && (language == 'cs' || language == 'en');
+      }
+    }
+  }
+}
