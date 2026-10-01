@@ -47,26 +47,26 @@ export const Header: React.FC<HeaderProps> = ({
   const totalQuestions = totalQuestionsCount || 911;
 
   return (
-    <header className="border-b border-stone-800 bg-stone-900/90 backdrop-blur-md sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-3.5">
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-3">
+    <header className="border-b border-stone-800 bg-stone-900/95 backdrop-blur-md sticky top-0 z-40">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-3.5">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-2 sm:gap-3">
           {/* Logo & Brand */}
-          <div className="flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-start">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center shadow-lg shadow-amber-950/40 text-stone-950 font-black tracking-wider text-xl border border-amber-400/30 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 w-full lg:w-auto justify-between lg:justify-start">
+            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center shadow-lg shadow-amber-950/40 text-stone-950 font-black tracking-wider text-lg sm:text-xl border border-amber-400/30 shrink-0">
                 FZ
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-base sm:text-lg font-bold text-stone-100 tracking-tight flex items-center gap-1.5">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <h1 className="text-sm sm:text-lg font-bold text-stone-100 tracking-tight truncate">
                     FUZE Gastro Akademie
                   </h1>
-                  {/* Klikací tlačítka CZ / EN pro přepínání jazyka (nahrazuje Menu & Ingredience) */}
-                  <div className="inline-flex items-center p-0.5 rounded-lg bg-stone-950 border border-stone-800 shadow-inner">
+                  {/* Klikací tlačítka CZ / EN pro přepínání jazyka */}
+                  <div className="inline-flex items-center p-0.5 rounded-lg bg-stone-950 border border-stone-800 shadow-inner shrink-0">
                     <button
                       type="button"
                       onClick={() => onLanguageChange?.('cs')}
-                      className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] sm:text-xs font-semibold transition-all ${
+                      className={`flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] sm:text-xs font-semibold transition-all ${
                         language === 'cs'
                           ? 'bg-amber-600 text-stone-100 shadow-sm border border-amber-500/50'
                           : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800/60 border border-transparent'
@@ -74,13 +74,13 @@ export const Header: React.FC<HeaderProps> = ({
                       title="Čeština"
                       aria-label="Přepnout do češtiny"
                     >
-                      <span className="text-xs">🇨🇿</span>
+                      <span>🇨🇿</span>
                       <span>CZ</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => onLanguageChange?.('en')}
-                      className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] sm:text-xs font-semibold transition-all ${
+                      className={`flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] sm:text-xs font-semibold transition-all ${
                         language === 'en'
                           ? 'bg-amber-600 text-stone-100 shadow-sm border border-amber-500/50'
                           : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800/60 border border-transparent'
@@ -88,12 +88,12 @@ export const Header: React.FC<HeaderProps> = ({
                       title="English (připravuje se)"
                       aria-label="Switch to English"
                     >
-                      <span className="text-xs">🇬🇧</span>
+                      <span>🇬🇧</span>
                       <span>EN</span>
                     </button>
                   </div>
                 </div>
-                <p className="text-xs text-stone-400 hidden sm:block">
+                <p className="text-xs text-stone-400 hidden sm:block truncate">
                   {language === 'en'
                     ? 'Training trainer of dishes and drinks according to original recipes'
                     : 'Výukový trenažér jídel a nápojů podle originální receptury'}
@@ -102,23 +102,23 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
 
             {/* Mobile Actions: Admin, User, PWA Install & Sound button */}
-            <div className="lg:hidden flex items-center gap-1.5 shrink-0">
+            <div className="lg:hidden flex items-center gap-1 sm:gap-1.5 shrink-0">
               {currentUser?.role === 'admin' && (
                 <button
                   type="button"
                   onClick={onOpenAdmin}
-                  className="px-2 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-bold flex items-center gap-1"
+                  className="px-2 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-bold flex items-center gap-1 active:scale-95 transition-transform"
                   title="Správa uživatelů"
                 >
                   <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Admin</span>
+                  <span className="hidden xs:inline">Admin</span>
                 </button>
               )}
               {currentUser && (
                 <button
                   type="button"
                   onClick={onLogout}
-                  className="p-1.5 rounded-lg bg-stone-800 text-stone-400 hover:text-rose-400 transition-colors"
+                  className="p-1.5 rounded-lg bg-stone-800 text-stone-400 hover:text-rose-400 transition-colors active:scale-95"
                   title={`Odhlásit (${currentUser.name})`}
                 >
                   <LogOut className="w-4 h-4" />
@@ -128,18 +128,22 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={handleToggleSound}
                 title={soundOn ? 'Vypnout zvuky' : 'Zapnout zvuky'}
-                className="p-2 rounded-lg bg-stone-800/80 hover:bg-stone-700 text-stone-300 transition-colors shrink-0"
+                className="p-1.5 sm:p-2 rounded-lg bg-stone-800/80 hover:bg-stone-700 text-stone-300 transition-colors shrink-0 active:scale-95"
               >
                 {soundOn ? <Volume2 className="w-4 h-4 text-amber-400" /> : <VolumeX className="w-4 h-4 text-stone-500" />}
               </button>
             </div>
           </div>
 
-          {/* Nav Tabs */}
-          <div className="flex items-center gap-1 sm:gap-1.5 bg-stone-950 p-1 rounded-xl border border-stone-800 w-full sm:w-auto justify-center flex-wrap">
+          {/* Nav Tabs (Smooth horizontal scrolling on mobile, no clumsy wrapping) */}
+          <nav 
+            aria-label="Hlavní navigace"
+            className="flex items-center gap-1 sm:gap-1.5 bg-stone-950 p-1 rounded-xl border border-stone-800 w-full lg:w-auto overflow-x-auto scroll-smooth flex-nowrap"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
             <button
               onClick={() => setCurrentTab('train')}
-              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 whitespace-nowrap ${
                 currentTab === 'train'
                   ? 'bg-amber-600 text-white shadow-md shadow-amber-900/40'
                   : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800/50'
@@ -151,7 +155,7 @@ export const Header: React.FC<HeaderProps> = ({
 
             <button
               onClick={() => setCurrentTab('exam')}
-              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 whitespace-nowrap ${
                 currentTab === 'exam'
                   ? 'bg-amber-600 text-white shadow-md shadow-amber-900/40'
                   : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800/50'
@@ -163,7 +167,7 @@ export const Header: React.FC<HeaderProps> = ({
 
             <button
               onClick={() => setCurrentTab('catalog')}
-              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 whitespace-nowrap ${
                 currentTab === 'catalog'
                   ? 'bg-amber-600 text-white shadow-md shadow-amber-900/40'
                   : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800/50'
@@ -175,7 +179,7 @@ export const Header: React.FC<HeaderProps> = ({
 
             <button
               onClick={() => setCurrentTab('tables')}
-              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 whitespace-nowrap ${
                 currentTab === 'tables'
                   ? 'bg-amber-600 text-white shadow-md shadow-amber-900/40'
                   : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800/50'
@@ -187,7 +191,7 @@ export const Header: React.FC<HeaderProps> = ({
 
             <button
               onClick={() => setCurrentTab('library')}
-              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 whitespace-nowrap ${
                 currentTab === 'library'
                   ? 'bg-amber-600 text-white shadow-md shadow-amber-900/40'
                   : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800/50'
@@ -196,7 +200,7 @@ export const Header: React.FC<HeaderProps> = ({
               <Library className="w-3.5 h-3.5 text-amber-400" />
               <span>{language === 'en' ? 'Library' : 'Knihovna'}</span>
             </button>
-          </div>
+          </nav>
 
           {/* Desktop Stats & Controls */}
           <div className="hidden lg:flex items-center gap-3 text-xs">

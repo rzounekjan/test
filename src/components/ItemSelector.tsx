@@ -76,21 +76,21 @@ export const ItemSelector: React.FC<ItemSelectorProps> = ({
       </div>
 
       {/* Category Title Header */}
-      <div className="bg-stone-900/60 border border-stone-800 rounded-xl p-5 sm:p-6">
+      <div className="bg-stone-900/60 border border-stone-800 rounded-xl p-4 sm:p-6">
         <div className="flex items-center gap-2 text-xs font-bold text-amber-500 uppercase tracking-wider mb-1.5">
           <span>{language === 'en' ? 'Category' : 'Skupina'}</span>
           <span>·</span>
           <span>{category.items.length} {language === 'en' ? 'items' : 'podsložek'}</span>
         </div>
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-100 tracking-tight font-serif mb-2">
+        <h2 className="text-xl sm:text-3xl font-extrabold text-stone-100 tracking-tight font-serif mb-1.5 sm:mb-2">
           {category.name}
         </h2>
-        <p className="text-sm text-stone-300 max-w-2xl leading-relaxed">
+        <p className="text-xs sm:text-sm text-stone-300 max-w-2xl leading-relaxed">
           {category.description}
         </p>
 
         {/* Search bar inside category */}
-        <div className="mt-4 relative max-w-md">
+        <div className="mt-3.5 sm:mt-4 relative max-w-md">
           <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
@@ -104,7 +104,7 @@ export const ItemSelector: React.FC<ItemSelectorProps> = ({
 
       {/* Special Interactive Table Trainer Banner when viewing plan-stolu */}
       {(category.id === 'plan-stolu' || category.id === 'rozmisteni-stolu') && onOpenTableTrainer && (
-        <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-950/50 via-stone-900 to-amber-900/30 border-2 border-amber-500/70 shadow-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fadeIn">
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-amber-950/50 via-stone-900 to-amber-900/30 border-2 border-amber-500/70 shadow-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fadeIn">
           <div className="flex items-center gap-3.5">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-stone-950 flex items-center justify-center font-black text-xl shrink-0 shadow-lg shadow-amber-950/50">
               <MapPin className="w-6 h-6 stroke-[2.5]" />
@@ -145,7 +145,7 @@ export const ItemSelector: React.FC<ItemSelectorProps> = ({
             {language === 'en' ? `No items match the filter "${search}".` : `Nenalezena žádná podsložka odpovídající filtru "${search}".`}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             {filteredItems.map((item) => {
               const masteredQuestionsCount = (stats.masteredQuestionIds || []).filter(qid =>
                 item.questions.some(q => q.id === qid)

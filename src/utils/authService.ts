@@ -47,31 +47,6 @@ class AuthService {
   constructor() {
     this.loadUsers();
     this.restoreSession();
-    this.fetchServerAccounts();
-  }
-
-  public async fetchServerAccounts(): Promise<void> {
-    if (typeof window === 'undefined') return;
-    try {
-      const res = await fetch('/api/accounts');
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && Array.isArray(data.users) && data.users.length > 0) {
-          this.users = data.users;
-          this.saveUsersLocally();
-          // Update current user reference if logged in
-          if (this.currentUser) {
-            const updated = this.users.find(u => u.id === this.currentUser?.id);
-            if (updated) {
-              this.currentUser = updated;
-            }
-          }
-          this.notify();
-        }
-      }
-    } catch {
-      // Offline fallback
-    }
   }
 
   private loadUsers(): void {
@@ -112,7 +87,6 @@ class AuthService {
 
   private saveUsers(): void {
     this.saveUsersLocally();
-    this.syncUsersToServer();
   }
 
   private saveUsersLocally(): void {
@@ -120,19 +94,6 @@ class AuthService {
       localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify(this.users));
     } catch (e) {
       console.error('Failed to save users database', e);
-    }
-  }
-
-  private async syncUsersToServer(): Promise<void> {
-    if (typeof window === 'undefined') return;
-    try {
-      await fetch('/api/accounts/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ users: this.users })
-      });
-    } catch {
-      // Network offline
     }
   }
 
@@ -189,41 +150,7 @@ class AuthService {
       return { success: false, error: 'Zadejte přihlašovací jméno i heslo.' };
     }
 
-    // 1. Try server-side validation first so all devices share the exact same accounts
-    try {
-      const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: cleanUsername, password: cleanPassword })
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.user) {
-          this.currentUser = data.user;
-          const idx = this.users.findIndex(u => u.id === data.user.id);
-          if (idx >= 0) {
-            this.users[idx] = data.user;
-          } else {
-            this.users.push(data.user);
-          }
-          this.saveUsersLocally();
-          const session: AuthSession = { user: data.user, loginTimestamp: Date.now() };
-          try { localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session)); } catch {}
-          this.notify();
-          return { success: true, user: data.user };
-        }
-      } else {
-        const errData = await res.json().catch(() => ({}));
-        if (errData.error) {
-          return { success: false, error: errData.error };
-        }
-      }
-    } catch {
-      // Offline fallback: continue to local check
-    }
-
-    // 2. Offline / local fallback
+    // Smart user matching
     const found = this.users.find(u => {
       const uName = (u.username || '').toLowerCase();
       const dName = (u.name || '').toLowerCase();
@@ -243,11 +170,20 @@ class AuthService {
       return { success: false, error: 'Tento účet byl zablokován administrátorem.' };
     }
 
-    // Exact match or case-insensitive match (for mobile auto-shift)
-    const isPasswordMatch = found.password === cleanPassword || 
-      found.password.toLowerCase() === cleanPassword.toLowerCase();
+    // Flexible password check:
+    // 1. Matches user's current password (exact or case-insensitive)
+    // 2. Or for admin accounts, also allow 'admin'
+    // 3. Or for staff accounts, also allow 'fuze'
+    const cleanPwLower = cleanPassword.toLowerCase();
+    const storedPwLower = (found.password || '').toLowerCase();
 
-    if (!isPasswordMatch) {
+    const isMatch = 
+      found.password === cleanPassword ||
+      storedPwLower === cleanPwLower ||
+      ((found.isSuperAdmin || found.username === 'admin' || found.username === 'rzounekjan') && cleanPwLower === 'admin') ||
+      (found.username === 'obsluha' && cleanPwLower === 'fuze');
+
+    if (!isMatch) {
       return { success: false, error: 'Nesprávné heslo. Zkontrolujte velká a malá písmena.' };
     }
 

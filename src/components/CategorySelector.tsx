@@ -67,27 +67,27 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
   }, [lastSelectedCategoryId, onClearLastSelectedCategory]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Intro Hero Banner */}
-      <div className="rounded-2xl p-6 sm:p-8 bg-gradient-to-br from-stone-900 via-stone-900/90 to-amber-950/30 border border-stone-800 shadow-xl relative overflow-hidden">
+      <div className="rounded-2xl p-4 sm:p-8 bg-gradient-to-br from-stone-900 via-stone-900/90 to-amber-950/30 border border-stone-800 shadow-xl relative overflow-hidden">
         <div className="absolute -right-8 -top-8 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
         
         <div className="relative z-10 max-w-2xl">
-          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-semibold mb-3">
+          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-semibold mb-2 sm:mb-3">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
             1. KROK: Vyberte skupinu pokrmů nebo nápojů
           </div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-100 tracking-tight font-serif mb-2">
+          <h2 className="text-xl sm:text-3xl font-extrabold text-stone-100 tracking-tight font-serif mb-1.5 sm:mb-2">
             Interaktivní výuka menu restaurace FUZE
           </h2>
-          <p className="text-sm text-stone-300 leading-relaxed">
+          <p className="text-xs sm:text-sm text-stone-300 leading-relaxed">
             Vyberte si kategorii ze stálého či sezónního lístku a následně zvolte konkrétní podsložku (jídlo). V navazujícím testu systému <strong className="text-amber-400">A, B, C</strong> prověříte své znalosti přesného složení, ingrediencí a specifik přípravy.
           </p>
         </div>
       </div>
 
       {/* Grid of categories */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {categories.map((cat) => {
           const Icon = ICON_MAP[cat.iconName] || Utensils;
           const itemsCount = cat.items.length;

@@ -541,9 +541,9 @@ export const TableOrientationTrainer: React.FC<TableOrientationTrainerProps> = (
       </div>
 
       {/* Map Controls Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-stone-900/60 px-4 py-2.5 rounded-xl border border-stone-800">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-xs text-stone-300 font-semibold">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-stone-900/60 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-stone-800">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          <div className="flex items-center gap-1.5 sm:gap-2 text-xs text-stone-300 font-semibold">
             <span className="px-2 py-0.5 rounded-md bg-stone-800 font-mono text-amber-400 font-black">
               {activeFloor}. NP
             </span>
@@ -553,23 +553,23 @@ export const TableOrientationTrainer: React.FC<TableOrientationTrainerProps> = (
           </div>
 
           {/* Quick search input */}
-          <div className="relative">
+          <div className="relative flex-1 sm:flex-initial">
             <Search className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={activeFloor === 1 ? 'Hledat stůl 121, 102...' : 'Hledat stůl 209, 225...'}
-              className="w-36 sm:w-48 bg-stone-950 border border-stone-800 rounded-lg pl-8 pr-2.5 py-1 text-xs text-stone-200 placeholder-stone-500 focus:outline-none focus:border-amber-500 transition-colors"
+              className="w-full sm:w-48 bg-stone-950 border border-stone-800 rounded-lg pl-8 pr-2.5 py-1 text-xs text-stone-200 placeholder-stone-500 focus:outline-none focus:border-amber-500 transition-colors"
             />
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 self-end sm:self-auto">
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
           {/* Blind Map Toggle */}
           <button
             onClick={() => setHideTableNumbers(prev => !prev)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
               hideTableNumbers
                 ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
                 : 'bg-stone-800 text-stone-400 hover:text-stone-200 border-stone-700/60'
@@ -588,7 +588,7 @@ export const TableOrientationTrainer: React.FC<TableOrientationTrainerProps> = (
           <div className="flex items-center gap-1 bg-stone-950 p-1 rounded-lg border border-stone-800">
             <button
               onClick={() => setZoomLevel(prev => Math.max(0.75, prev - 0.1))}
-              className="p-1 rounded text-stone-400 hover:text-stone-200 hover:bg-stone-800 transition-colors"
+              className="p-1 rounded text-stone-400 hover:text-stone-200 hover:bg-stone-800 transition-colors active:scale-95"
               title="Zoom out"
             >
               <ZoomOut className="w-3.5 h-3.5" />
@@ -596,14 +596,14 @@ export const TableOrientationTrainer: React.FC<TableOrientationTrainerProps> = (
             <span className="text-[11px] font-mono text-stone-400 px-1">{Math.round(zoomLevel * 100)}%</span>
             <button
               onClick={() => setZoomLevel(prev => Math.min(1.5, prev + 0.1))}
-              className="p-1 rounded text-stone-400 hover:text-stone-200 hover:bg-stone-800 transition-colors"
+              className="p-1 rounded text-stone-400 hover:text-stone-200 hover:bg-stone-800 transition-colors active:scale-95"
               title="Zoom in"
             >
               <ZoomIn className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => setZoomLevel(1)}
-              className="p-1 rounded text-stone-400 hover:text-stone-200 hover:bg-stone-800 transition-colors"
+              className="p-1 rounded text-stone-400 hover:text-stone-200 hover:bg-stone-800 transition-colors active:scale-95"
               title="Reset zoom"
             >
               <Maximize2 className="w-3.5 h-3.5" />
@@ -615,8 +615,8 @@ export const TableOrientationTrainer: React.FC<TableOrientationTrainerProps> = (
       {/* Main Floor Plan Large Format View (PC Layout) */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 items-start">
         {/* Large Format Interactive Vector Map (3 cols on PC) */}
-        <div className="xl:col-span-3 bg-stone-900/90 border border-stone-800 rounded-2xl p-4 shadow-2xl overflow-hidden relative">
-          <div className="overflow-auto max-h-[760px] rounded-xl bg-stone-950 border border-stone-900/80 p-2 flex items-center justify-center">
+        <div className="xl:col-span-3 bg-stone-900/90 border border-stone-800 rounded-2xl p-2 sm:p-4 shadow-2xl overflow-hidden relative">
+          <div className="overflow-auto max-h-[65vh] sm:max-h-[760px] rounded-xl bg-stone-950 border border-stone-900/80 p-1 sm:p-2 flex items-center justify-center touch-pan-x touch-pan-y">
             <div 
               style={{ 
                 transform: `scale(${zoomLevel})`, 

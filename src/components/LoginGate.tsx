@@ -34,7 +34,7 @@ export const LoginGate: React.FC<LoginGateProps> = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen bg-stone-950 flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden">
+    <div className="min-h-[100dvh] bg-stone-950 flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden">
       {/* Background ambient decorative glows */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-amber-600/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-10 right-10 w-72 h-72 bg-amber-800/10 rounded-full blur-2xl pointer-events-none" />
@@ -70,7 +70,7 @@ export const LoginGate: React.FC<LoginGateProps> = ({ onLoginSuccess }) => {
                 </div>
                 {error.includes('neexistuje') && (
                   <p className="text-[11px] text-stone-400 mt-1 pl-5">
-                    💡 Pokud jste účet vytvořili na počítači, otevřete na mobilu přímý odkaz z administrace, nebo klikněte na zkušební přihlášení níže.
+                    💡 Zkontrolujte překlepy. Pro správce: admin nebo rzounekjan. Pro personál: obsluha.
                   </p>
                 )}
               </div>
