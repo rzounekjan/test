@@ -1,4 +1,12 @@
 import { AppUser, AuthSession } from '../types/auth';
+import { 
+  collection, 
+  doc, 
+  setDoc, 
+  deleteDoc, 
+  onSnapshot 
+} from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType } from '../firebase';
 
 const ACCOUNTS_STORAGE_KEY = 'fuze_gastro_accounts_db';
 const SESSION_STORAGE_KEY = 'fuze_gastro_active_session';
@@ -43,10 +51,70 @@ class AuthService {
   private users: AppUser[] = [];
   private currentUser: AppUser | null = null;
   private listeners: Set<(user: AppUser | null) => void> = new Set();
+  private hasInitializedFirestore: boolean = false;
 
   constructor() {
     this.loadUsers();
     this.restoreSession();
+    this.initFirestoreSync();
+  }
+
+  private initFirestoreSync(): void {
+    if (typeof window === 'undefined' || this.hasInitializedFirestore) return;
+    this.hasInitializedFirestore = true;
+
+    try {
+      const colRef = collection(db, 'restaurant_accounts');
+      onSnapshot(colRef, (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteUsers: AppUser[] = [];
+          snapshot.forEach((docSnap) => {
+            const data = docSnap.data() as AppUser;
+            remoteUsers.push(data);
+          });
+
+          // Ensure super admin accounts always retain isSuperAdmin: true
+          remoteUsers.forEach(u => {
+            if (
+              u.id === 'user_admin_01' || 
+              u.id === 'user_admin_02' || 
+              u.username === 'admin' || 
+              u.username === 'rzounekjan'
+            ) {
+              u.isSuperAdmin = true;
+            }
+          });
+
+          this.users = remoteUsers;
+          this.saveUsersLocally();
+
+          if (this.currentUser) {
+            const updated = this.users.find(u => u.id === this.currentUser?.id);
+            if (updated) {
+              this.currentUser = updated;
+            }
+          }
+          this.notify();
+        } else {
+          // If Firestore collection is empty, seed it with DEFAULT_USERS
+          this.seedInitialUsersToFirestore();
+        }
+      }, (error) => {
+        console.warn('Firestore accounts sync status:', error);
+      });
+    } catch (e) {
+      console.warn('Could not initialize Firestore sync:', e);
+    }
+  }
+
+  private async seedInitialUsersToFirestore(): Promise<void> {
+    try {
+      for (const user of this.users.length > 0 ? this.users : DEFAULT_USERS) {
+        await setDoc(doc(db, 'restaurant_accounts', user.id), user);
+      }
+    } catch (err) {
+      console.warn('Initial seeding of users:', err);
+    }
   }
 
   private loadUsers(): void {
@@ -190,6 +258,8 @@ class AuthService {
     // Success
     found.lastLoginAt = new Date().toISOString();
     this.saveUsersLocally();
+    // Sync last login to Firestore in background
+    setDoc(doc(db, 'restaurant_accounts', found.id), found, { merge: true }).catch(() => {});
 
     this.currentUser = found;
     const session: AuthSession = {
@@ -266,7 +336,15 @@ class AuthService {
     };
 
     this.users.push(newUser);
-    this.saveUsers();
+    this.saveUsersLocally();
+
+    // Instant sync to Firestore so all mobile phones & PCs see the new user immediately
+    setDoc(doc(db, 'restaurant_accounts', newUser.id), newUser).catch((err) => {
+      console.error('Error saving user to Firestore:', err);
+      handleFirestoreError(err, OperationType.CREATE, `restaurant_accounts/${newUser.id}`);
+    });
+
+    this.notify();
     return { success: true, user: newUser };
   }
 
@@ -309,13 +387,20 @@ class AuthService {
       ...updates
     };
 
-    this.saveUsers();
+    const updated = this.users[userIndex];
+    this.saveUsersLocally();
+
+    // Instant sync to Firestore
+    setDoc(doc(db, 'restaurant_accounts', id), updated).catch((err) => {
+      console.error('Error updating user in Firestore:', err);
+      handleFirestoreError(err, OperationType.UPDATE, `restaurant_accounts/${id}`);
+    });
 
     // If current user was updated, update in-memory session too
     if (this.currentUser?.id === id) {
-      this.currentUser = this.users[userIndex];
-      this.notify();
+      this.currentUser = updated;
     }
+    this.notify();
 
     return { success: true };
   }
@@ -350,7 +435,15 @@ class AuthService {
     }
 
     this.users = this.users.filter(u => u.id !== id);
-    this.saveUsers();
+    this.saveUsersLocally();
+
+    // Instant delete from Firestore
+    deleteDoc(doc(db, 'restaurant_accounts', id)).catch((err) => {
+      console.error('Error deleting user from Firestore:', err);
+      handleFirestoreError(err, OperationType.DELETE, `restaurant_accounts/${id}`);
+    });
+
+    this.notify();
     return { success: true };
   }
 

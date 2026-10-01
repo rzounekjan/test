@@ -104,9 +104,67 @@
         "mistakeQuestionIds",
         "updatedAt"
       ]
+    },
+    "RestaurantAccount": {
+      "title": "RestaurantAccount",
+      "description": "Staff and administrator accounts synchronized across PC and mobile devices",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique user account ID",
+          "maxLength": 128
+        },
+        "username": {
+          "type": "string",
+          "description": "Unique login username",
+          "maxLength": 64
+        },
+        "name": {
+          "type": "string",
+          "description": "Full display name of employee or admin",
+          "maxLength": 128
+        },
+        "password": {
+          "type": "string",
+          "description": "Access password or PIN",
+          "maxLength": 128
+        },
+        "role": {
+          "type": "string",
+          "description": "System role: admin or staff",
+          "enum": ["admin", "staff"]
+        },
+        "isSuperAdmin": {
+          "type": "boolean",
+          "description": "Owner super administrator flag"
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Whether the account is active"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Internal notes or position details",
+          "maxLength": 512
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp"
+        },
+        "lastLoginAt": {
+          "type": "string",
+          "description": "Last successful login timestamp"
+        }
+      },
+      "required": ["id", "username", "name", "password", "role", "isActive"]
     }
   },
   "firestore": {
+    "/restaurant_accounts/{accountId}": {
+      "schema": "RestaurantAccount",
+      "description": "Restaurant staff accounts database synced between PC and mobile devices"
+    },
     "/users/{userId}": {
       "schema": "UserProfile",
       "description": "Collection of user profiles for authenticated sync"
