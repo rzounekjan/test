@@ -258,6 +258,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                 const isEditingPassword = editingUserId === user.id;
 
                 // Security permissions: Main admin credentials and controls are protected from other admins
+                const canSeeLogin = !isTargetSuperAdmin || isCurrent;
                 const canSeePassword = !isTargetSuperAdmin || isCurrent;
                 const canEditPassword = !isTargetSuperAdmin || isCurrent;
                 const canToggleActive = !isCurrent && !isTargetSuperAdmin && (user.role !== 'admin' || isViewerSuperAdmin);
@@ -293,8 +294,8 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                               <span className="text-[9px] px-1 py-0.2 bg-amber-950/80 text-amber-300 rounded font-semibold border border-amber-800/60">Vlastník</span>
                             </span>
                           ) : user.role === 'admin' ? (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-stone-800 text-amber-400 border border-stone-700">
-                              Administrátor
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center gap-1">
+                              <span>🛡️ Podřazený administrátor</span>
                             </span>
                           ) : (
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-stone-800 text-stone-300 border border-stone-700">
@@ -315,13 +316,23 @@ export const AdminModal: React.FC<AdminModalProps> = ({
 
                         {/* Login Details & Password */}
                         <div className="flex flex-wrap items-center gap-2 text-xs text-stone-400 font-mono">
-                          <span>Login: <strong className="text-amber-300 font-bold">{user.username}</strong></span>
+                          {canSeeLogin ? (
+                            <span>Login: <strong className="text-amber-300 font-bold">{user.username}</strong></span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 text-stone-400 bg-stone-950 px-2 py-0.5 rounded border border-stone-800">
+                              <Lock className="w-3 h-3 text-amber-400" />
+                              <span>Login:</span>
+                              <span className="tracking-widest font-mono text-stone-300">••••••••</span>
+                              <span className="text-[10px] text-amber-400 font-sans font-semibold">(Skryto)</span>
+                            </span>
+                          )}
                           <span>•</span>
                           {canSeePassword ? (
                             <span>Heslo: <strong className="text-stone-200 bg-stone-900 px-2 py-0.5 rounded border border-stone-800">{user.password}</strong></span>
                           ) : (
                             <span className="inline-flex items-center gap-1.5 text-stone-400 bg-stone-950 px-2 py-0.5 rounded border border-stone-800">
                               <Lock className="w-3 h-3 text-amber-400" />
+                              <span>Heslo:</span>
                               <span className="tracking-widest font-mono text-stone-300">••••••••</span>
                               <span className="text-[10px] text-amber-400 font-sans font-semibold">(Chráněno)</span>
                             </span>
@@ -581,19 +592,63 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                 <label className="block text-xs font-semibold text-stone-300 mb-1.5">
                   Role v systému
                 </label>
-                <div className="p-3.5 rounded-xl border bg-amber-500/10 border-amber-500/40 text-amber-300">
-                  <div className="flex items-center justify-between">
-                    <p className="font-bold text-xs text-stone-100 flex items-center gap-1.5">
-                      <span>👤 Personál / Obsluha</span>
-                    </p>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                      Standardní přístup
-                    </span>
+                {currentUser?.isSuperAdmin ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setNewRole('staff')}
+                      className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                        newRole === 'staff'
+                          ? 'bg-amber-500/10 border-amber-500 text-amber-300 shadow-sm'
+                          : 'bg-stone-950 border-stone-800 text-stone-400 hover:border-stone-700'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="font-bold text-xs text-stone-200 flex items-center gap-1.5">
+                          <span>👤 Personál / Obsluha</span>
+                        </p>
+                        {newRole === 'staff' && <Check className="w-3.5 h-3.5 text-amber-400" />}
+                      </div>
+                      <p className="text-[11px] text-stone-400">
+                        Pouze výuka, testy a zkoušky. Nemá přístup do administrace.
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setNewRole('admin')}
+                      className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                        newRole === 'admin'
+                          ? 'bg-amber-500/10 border-amber-500 text-amber-300 shadow-sm'
+                          : 'bg-stone-950 border-stone-800 text-stone-400 hover:border-stone-700'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="font-bold text-xs text-stone-200 flex items-center gap-1.5">
+                          <span>🛡️ Podřazený administrátor</span>
+                        </p>
+                        {newRole === 'admin' && <Check className="w-3.5 h-3.5 text-amber-400" />}
+                      </div>
+                      <p className="text-[11px] text-stone-400">
+                        Správa obsluhy a statistik. Nevidí login ani heslo hlavního administrátora.
+                      </p>
+                    </button>
                   </div>
-                  <p className="text-[11px] text-stone-400 mt-1">
-                    Přístup do výuky, testů, zkoušek a interaktivního plánu stolů. V systému je vyhrazen pouze jeden administrátor: <strong>Jan Rzounek (Hlavní administrátor)</strong>.
-                  </p>
-                </div>
+                ) : (
+                  <div className="p-3.5 rounded-xl border bg-amber-500/10 border-amber-500/40 text-amber-300">
+                    <div className="flex items-center justify-between">
+                      <p className="font-bold text-xs text-stone-100 flex items-center gap-1.5">
+                        <span>👤 Personál / Obsluha</span>
+                      </p>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        Standardní přístup
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-stone-400 mt-1">
+                      Jako podřazený administrátor můžete vytvářet pouze účty obsluhy a personálu.
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div>

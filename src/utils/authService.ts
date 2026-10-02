@@ -61,24 +61,27 @@ class AuthService {
 
           snapshot.forEach((docSnap) => {
             const data = docSnap.data() as AppUser;
-            // Purge any extra admin account from Firestore (keep ONLY user_admin_01)
-            if (
-              data.id === 'user_admin_02' || 
-              data.username === 'rzounekjan' || 
-              (data.role === 'admin' && data.id !== 'user_admin_01')
-            ) {
+            // Purge only the old duplicate account user_admin_02 / rzounekjan
+            if (data.id === 'user_admin_02' || data.username === 'rzounekjan') {
               toDeleteFromRemote.push(docSnap.id);
             } else {
+              if (data.id === 'user_admin_01' || data.username === 'admin') {
+                data.isSuperAdmin = true;
+                data.role = 'admin';
+                data.name = 'Jan Rzounek (Hlavní administrátor)';
+              } else if (data.role === 'admin') {
+                data.isSuperAdmin = false; // Subordinate administrator
+              }
               remoteUsers.push(data);
             }
           });
 
-          // Delete extraneous admin accounts from Firestore
+          // Delete extraneous duplicate accounts from Firestore
           toDeleteFromRemote.forEach((docId) => {
             deleteDoc(doc(db, 'restaurant_accounts', docId)).catch(() => {});
           });
 
-          // Ensure main admin account is correctly formatted
+          // Ensure main admin account is correctly present
           const mainAdminIdx = remoteUsers.findIndex(u => u.id === 'user_admin_01' || u.username === 'admin');
           if (mainAdminIdx >= 0) {
             remoteUsers[mainAdminIdx] = {
@@ -99,8 +102,7 @@ class AuthService {
           this.saveUsersLocally();
 
           if (this.currentUser) {
-            // If previously logged in as user_admin_02, switch to user_admin_01
-            if (this.currentUser.id === 'user_admin_02' || (this.currentUser.role === 'admin' && this.currentUser.id !== 'user_admin_01')) {
+            if (this.currentUser.id === 'user_admin_02') {
               this.currentUser = this.users.find(u => u.id === 'user_admin_01') || null;
             } else {
               const updated = this.users.find(u => u.id === this.currentUser?.id);
@@ -138,14 +140,13 @@ class AuthService {
       if (stored) {
         let loaded: AppUser[] = JSON.parse(stored);
 
-        // Delete all admin accounts except the single main admin Jan Rzounek (Hlavní administrátor)
+        // Filter out old duplicate user_admin_02
         loaded = loaded.filter(u => {
           if (u.id === 'user_admin_02' || u.username === 'rzounekjan') return false;
-          if (u.role === 'admin' && u.id !== 'user_admin_01') return false;
           return true;
         });
 
-        // Ensure user_admin_01 is present
+        // Ensure user_admin_01 is present as Super Admin
         const mainAdminIdx = loaded.findIndex(u => u.id === 'user_admin_01' || u.username === 'admin');
         if (mainAdminIdx >= 0) {
           loaded[mainAdminIdx] = {
@@ -160,6 +161,13 @@ class AuthService {
         } else {
           loaded.unshift(DEFAULT_USERS[0]);
         }
+
+        // Subordinate admins retain role: 'admin' and isSuperAdmin: false
+        loaded.forEach(u => {
+          if (u.id !== 'user_admin_01' && u.role === 'admin') {
+            u.isSuperAdmin = false;
+          }
+        });
 
         // Ensure staff account exists
         if (!loaded.some(u => u.role === 'staff')) {
